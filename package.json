@@ -1,0 +1,33 @@
+{
+  "name": "octechpus",
+  "version": "1.0.0",
+  "description": "🐙 Octechpus — Agent Orchestrator CLI for Claude Code projects",
+  "bin": {
+    "octechpus": "./src/cli.mjs"
+  },
+  "type": "module",
+  "keywords": [
+    "claude-code",
+    "ai-agents",
+    "code-quality",
+    "orchestrator",
+    "cli",
+    "devtools"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Phaiolli/octechpus.git"
+  },
+  "homepage": "https://github.com/Phaiolli/octechpus#readme",
+  "bugs": {
+    "url": "https://github.com/Phaiolli/octechpus/issues"
+  },
+  "author": "Octechpus",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "src/"
+  ]
+}
