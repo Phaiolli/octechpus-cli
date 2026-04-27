@@ -4,38 +4,39 @@
 
 Pipeline de 10 agentes de IA especializados que revisam, testam, protegem e documentam cada mudança no seu código — incluindo um guardião de design system.
 
+---
+
 ## Instalação
 
-### Opção 1 — Direto do GitHub (sem instalar nada)
+### Sem instalar nada (npx via GitHub)
 
 ```bash
-npx github:SEU_USUARIO/octechpus init
+npx github:Phaiolli/octechpus-cli init
 ```
 
-### Opção 2 — Do npm (após publicar)
+### Instalar globalmente
 
 ```bash
-npx octechpus init
+npm install -g github:Phaiolli/octechpus-cli
 ```
 
-### Opção 3 — Instalar globalmente
+Depois usa em qualquer projeto:
 
 ```bash
-# Do GitHub
-npm install -g github:SEU_USUARIO/octechpus
-
-# Ou do npm
-npm install -g octechpus
-
-# Depois usa em qualquer projeto:
 octechpus init
 ```
+
+### Atualizar
+
+```bash
+npm install -g github:Phaiolli/octechpus-cli
+```
+
+---
 
 ## Uso
 
 ```bash
-cd meu-projeto
-
 octechpus init                        # Setup completo
 octechpus init --with-design-system   # Setup + Designer agent + design-system/
 octechpus init --minimal              # Só commands do Claude Code
@@ -43,10 +44,12 @@ octechpus init --dry-run              # Preview sem escrever
 octechpus init --force                # Sobrescrever existentes
 octechpus status                      # Verificar setup
 octechpus doctor                      # Diagnosticar problemas
-octechpus update                      # Atualizar commands
+octechpus update                      # Atualizar commands para a versão mais recente
 octechpus design-system add           # Adicionar design system a projeto existente
 octechpus design-system update        # Sincronizar design-system/ com a versão mais recente
 ```
+
+---
 
 ## O que é criado
 
@@ -60,8 +63,8 @@ seu-projeto/
 │   ├── qa.md                         /qa
 │   ├── security.md                   /security
 │   ├── docs.md                       /docs
-│   ├── github-issue.md              /github-issue
-│   └── design.md                    /design  (com --with-design-system)
+│   ├── github-issue.md               /github-issue
+│   └── design.md                     /design  (com --with-design-system)
 ├── design-system/                 ← Tokens, docs e templates (com --with-design-system)
 │   ├── CLAUDE.md
 │   ├── README.md
@@ -81,21 +84,25 @@ seu-projeto/
 └── CHANGELOG.md
 ```
 
+---
+
 ## Comandos no Claude Code
 
 Após o `init`, abra o Claude Code no projeto e use:
 
 | Comando | Para quê |
 |---------|----------|
-| `/pipeline [demanda]` | Pipeline completo — todos os agentes |
+| `/pipeline [demanda]` | Pipeline completo — todos os agentes em sequência |
 | `/audit [escopo?]` | Raio-x do projeto com scorecard |
-| `/review [escopo]` | Code review |
+| `/review [escopo]` | Code review com severidade |
 | `/security [escopo]` | Audit de segurança OWASP |
 | `/qa [escopo]` | Criar testes (unit, integration, E2E) |
 | `/architect [escopo]` | Análise arquitetural |
 | `/docs [escopo]` | Documentação |
 | `/github-issue [demanda]` | Criar issue no GitHub |
 | `/design [demanda]` | Briefing de design system para UI (requer `--with-design-system`) |
+
+---
 
 ## Os 10 Agentes
 
@@ -116,29 +123,31 @@ Maestro → GitHub → Architect → 🎨 Designer (se UI) → Coder → Reviewe
 | 9 | 📚 Docs | JSDoc, README, CHANGELOG, ADRs |
 | 10 | 📊 Reporter | Relatório final com métricas |
 
+---
+
 ## Design System
 
-O flag `--with-design-system` ativa o **Designer** — o 10º agente do pipeline, guardião do seu design system pessoal.
+O flag `--with-design-system` ativa o **Designer** — o 10º agente do pipeline, guardião do seu design system.
 
 O que ele faz:
 - Lê os princípios, tokens e padrões em `./design-system/` antes de qualquer implementação de UI
 - Produz um **briefing técnico** (layout, componentes shadcn/ui, tokens CSS, estados, responsividade) que o Coder segue literalmente
-- Rejeita implementações com cores hardcoded, espaçamentos arbitrários ou falta de estados
+- Rejeita implementações com cores hardcoded, espaçamentos arbitrários ou ausência de estados
 - Consulta o Reviewer via checklist em todo PR que toque UI
 
-Para adicionar o design system a um projeto já inicializado:
+**Adicionar a um projeto já inicializado:**
 
 ```bash
 octechpus design-system add
 ```
 
-Para sincronizar com a versão mais recente dos templates:
+**Sincronizar com a versão mais recente dos templates:**
 
 ```bash
 octechpus design-system update
 ```
 
-Consulte `templates/design-system/README.md` no repositório do Octechpus para detalhes dos tokens e princípios.
+---
 
 ## Projetos existentes
 
@@ -149,6 +158,8 @@ cd projeto-existente
 octechpus init
 octechpus status
 ```
+
+---
 
 ## License
 
