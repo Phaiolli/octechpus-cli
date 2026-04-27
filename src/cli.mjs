@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { existsSync, mkdirSync, writeFileSync, readFileSync, readdirSync } from 'fs'
-import { join, resolve, dirname } from 'path'
+import { existsSync, mkdirSync, writeFileSync, readFileSync, readdirSync, copyFileSync, statSync } from 'fs'
+import { join, resolve, dirname, relative } from 'path'
 import { fileURLToPath } from 'url'
 import { execSync } from 'child_process'
 import readline from 'readline'
@@ -13,8 +13,9 @@ const __dirname = dirname(__filename)
 // CONFIG
 // ═══════════════════════════════════════════════════════════
 
-const VERSION = '1.0.0'
+const VERSION = '1.1.0'
 const TEMPLATES_DIR = join(__dirname, 'templates')
+const DESIGN_SYSTEM_TEMPLATES_DIR = join(TEMPLATES_DIR, 'design-system')
 
 const COLORS = {
   reset: '\x1b[0m',
@@ -51,23 +52,29 @@ function printHelp() {
   console.log(`    octechpus ${c('green', '<command>')} [options]`)
   console.log('')
   console.log(`  ${bold('Commands:')}`)
-  console.log(`    ${c('green', 'init')}        Setup Octechpus in current project`)
-  console.log(`    ${c('green', 'init')} ${c('dim', '<path>')}  Setup Octechpus in specified directory`)
-  console.log(`    ${c('green', 'status')}      Check Octechpus setup in current project`)
-  console.log(`    ${c('green', 'doctor')}      Diagnose issues with current setup`)
-  console.log(`    ${c('green', 'update')}      Update agent commands to latest version`)
-  console.log(`    ${c('green', 'help')}        Show this help message`)
+  console.log(`    ${c('green', 'init')}                     Setup Octechpus in current project`)
+  console.log(`    ${c('green', 'init')} ${c('dim', '<path>')}             Setup Octechpus in specified directory`)
+  console.log(`    ${c('green', 'status')}                   Check Octechpus setup in current project`)
+  console.log(`    ${c('green', 'doctor')}                   Diagnose issues with current setup`)
+  console.log(`    ${c('green', 'update')}                   Update agent commands to latest version`)
+  console.log(`    ${c('green', 'design-system add')}        Add design system to an existing project`)
+  console.log(`    ${c('green', 'design-system update')}     Sync design-system/ with latest templates`)
+  console.log(`    ${c('green', 'help')}                     Show this help message`)
   console.log('')
   console.log(`  ${bold('Options:')}`)
-  console.log(`    ${c('yellow', '--force')}     Overwrite existing files without asking`)
-  console.log(`    ${c('yellow', '--minimal')}   Only install .claude/commands (no docs, no github templates)`)
-  console.log(`    ${c('yellow', '--dry-run')}   Show what would be created without writing files`)
+  console.log(`    ${c('yellow', '--force')}              Overwrite existing files without asking`)
+  console.log(`    ${c('yellow', '--minimal')}            Only install .claude/commands (no docs, no github templates)`)
+  console.log(`    ${c('yellow', '--dry-run')}            Show what would be created without writing files`)
+  console.log(`    ${c('yellow', '--with-design-system')} Include Designer agent + copy design-system/ to project`)
   console.log('')
   console.log(`  ${bold('Examples:')}`)
   console.log(`    ${c('dim', 'npx octechpus init')}`)
+  console.log(`    ${c('dim', 'npx octechpus init --with-design-system')}`)
   console.log(`    ${c('dim', 'npx octechpus init ./my-project')}`)
   console.log(`    ${c('dim', 'npx octechpus init --force')}`)
   console.log(`    ${c('dim', 'npx octechpus status')}`)
+  console.log(`    ${c('dim', 'npx octechpus design-system add')}`)
+  console.log(`    ${c('dim', 'npx octechpus design-system update')}`)
   console.log('')
 }
 
@@ -133,12 +140,36 @@ function writeFile(filepath, content, options = {}) {
   return true
 }
 
+function copyDir(srcDir, destDir, options = {}) {
+  const { force = false, dryRun = false } = options
+  const entries = readdirSync(srcDir)
+  for (const entry of entries) {
+    const srcPath = join(srcDir, entry)
+    const destPath = join(destDir, entry)
+    const stat = statSync(srcPath)
+    if (stat.isDirectory()) {
+      if (!dryRun) ensureDir(destPath)
+      copyDir(srcPath, destPath, options)
+    } else {
+      if (existsSync(destPath) && !force) {
+        fileExists(destPath)
+      } else {
+        if (!dryRun) {
+          ensureDir(dirname(destPath))
+          copyFileSync(srcPath, destPath)
+        }
+        fileCreated(destPath, dryRun)
+      }
+    }
+  }
+}
+
 // ═══════════════════════════════════════════════════════════
 // COMMANDS
 // ═══════════════════════════════════════════════════════════
 
 async function commandInit(targetDir, options = {}) {
-  const { force = false, minimal = false, dryRun = false } = options
+  const { force = false, minimal = false, dryRun = false, withDesignSystem = false } = options
 
   printBanner()
 
@@ -166,6 +197,7 @@ async function commandInit(targetDir, options = {}) {
   console.log(bold('  Agent Commands (.claude/commands/)'))
 
   const commands = ['pipeline', 'audit', 'architect', 'review', 'qa', 'security', 'docs', 'github-issue']
+  if (withDesignSystem) commands.push('design')
 
   for (const cmd of commands) {
     const filepath = join(projectDir, '.claude', 'commands', `${cmd}.md`)
@@ -289,6 +321,17 @@ async function commandInit(targetDir, options = {}) {
     console.log('')
   }
 
+  if (withDesignSystem) {
+    // ─────────────────────────────────────────────
+    // Design System
+    // ─────────────────────────────────────────────
+    console.log(bold('  Design System (design-system/)'))
+    const destDesignSystem = join(projectDir, 'design-system')
+    copyDir(DESIGN_SYSTEM_TEMPLATES_DIR, destDesignSystem, { force, dryRun })
+    created++
+    console.log('')
+  }
+
   // ─────────────────────────────────────────────
   // Summary
   // ─────────────────────────────────────────────
@@ -312,6 +355,9 @@ async function commandInit(targetDir, options = {}) {
   console.log(`    ${c('green', '/architect')} ${c('dim', '[escopo]')}   — Architecture analysis`)
   console.log(`    ${c('green', '/docs')} ${c('dim', '[escopo]')}        — Documentation`)
   console.log(`    ${c('green', '/github-issue')} ${c('dim', '[demanda]')} — GitHub issue`)
+  if (withDesignSystem) {
+    console.log(`    ${c('green', '/design')} ${c('dim', '[demanda]')}     — Design system briefing (Designer agent)`)
+  }
   console.log('')
   console.log(`  ${c('dim', 'Open Claude Code and try:')} ${c('cyan', '/audit')}`)
   console.log('')
@@ -333,6 +379,8 @@ function commandStatus(targetDir) {
     { path: '.claude/commands/security.md', label: 'Security command', critical: false },
     { path: '.claude/commands/docs.md', label: 'Docs command', critical: false },
     { path: '.claude/commands/github-issue.md', label: 'GitHub Issue command', critical: false },
+    { path: '.claude/commands/design.md', label: 'Design command (optional)', critical: false },
+    { path: 'design-system', label: 'Design system files (optional)', critical: false },
     { path: 'CLAUDE.md', label: 'CLAUDE.md config', critical: true },
     { path: 'docs/AGENTS.md', label: 'Agents reference', critical: false },
     { path: 'docs/adr', label: 'ADR directory', critical: false },
@@ -400,6 +448,7 @@ async function commandDoctor(targetDir) {
   if (existsSync(commandsDir)) {
     const files = readdirSync(commandsDir).filter(f => f.endsWith('.md'))
     const expected = ['pipeline', 'audit', 'architect', 'review', 'qa', 'security', 'docs', 'github-issue']
+    // design.md is optional — only required when --with-design-system was used
     const missing = expected.filter(cmd => !files.includes(`${cmd}.md`))
 
     if (missing.length === 0) {
@@ -458,6 +507,11 @@ async function commandUpdate(targetDir, options = {}) {
   console.log('')
 
   const commands = ['pipeline', 'audit', 'architect', 'review', 'qa', 'security', 'docs', 'github-issue']
+
+  // Also update design.md if it's already installed
+  const designCmdPath = join(commandsDir, 'design.md')
+  if (existsSync(designCmdPath)) commands.push('design')
+
   let updated = 0
 
   for (const cmd of commands) {
@@ -480,22 +534,108 @@ async function commandUpdate(targetDir, options = {}) {
   console.log('')
 }
 
+async function commandDesignSystem(subcommand, targetDir, options = {}) {
+  const { force = false, dryRun = false } = options
+
+  printBanner()
+
+  const projectDir = resolve(targetDir)
+  const commandsDir = join(projectDir, '.claude', 'commands')
+  const destDesignSystem = join(projectDir, 'design-system')
+  const designCmdPath = join(commandsDir, 'design.md')
+
+  if (subcommand === 'add') {
+    // ── design-system add ────────────────────────────────
+    if (!existsSync(commandsDir)) {
+      console.log(`  ${c('red', '✗')} Octechpus not installed. Run ${c('cyan', 'npx octechpus init')} first.`)
+      console.log('')
+      return
+    }
+
+    console.log(`  ${c('blue', 'ℹ')} Adding design system to project...`)
+    console.log('')
+
+    console.log(bold('  Designer Command (.claude/commands/design.md)'))
+    writeFile(designCmdPath, loadTemplate('commands/design.md'), { force, dryRun })
+    console.log('')
+
+    console.log(bold('  Design System Files (design-system/)'))
+    copyDir(DESIGN_SYSTEM_TEMPLATES_DIR, destDesignSystem, { force, dryRun })
+    console.log('')
+
+    console.log(c('cyan', '  ═══════════════════════════════════════════════'))
+    console.log('')
+    if (dryRun) {
+      console.log(`  ${c('yellow', 'DRY RUN')} — No files were written`)
+    } else {
+      console.log(`  ${c('green', '✓')} Design system added!`)
+      console.log(`  Use ${c('cyan', '/design [demanda]')} in Claude Code to activate the Designer agent.`)
+    }
+    console.log('')
+
+  } else if (subcommand === 'update') {
+    // ── design-system update ─────────────────────────────
+    console.log(`  ${c('blue', 'ℹ')} Syncing design system with latest templates...`)
+    console.log('')
+
+    console.log(bold('  Designer Command'))
+    writeFile(designCmdPath, loadTemplate('commands/design.md'), { force: true, dryRun })
+    console.log('')
+
+    if (existsSync(destDesignSystem)) {
+      console.log(bold('  Design System Files (design-system/)'))
+      if (!force && !dryRun) {
+        console.log(`  ${c('yellow', '⚠')} This will overwrite customized files in design-system/.`)
+        const answer = await ask(`  Continue? (y/N): `)
+        if (answer !== 'y' && answer !== 'yes') {
+          console.log(`  ${c('yellow', '⊘')} Update cancelled.`)
+          console.log('')
+          return
+        }
+      }
+      copyDir(DESIGN_SYSTEM_TEMPLATES_DIR, destDesignSystem, { force: true, dryRun })
+    } else {
+      console.log(`  ${c('yellow', '⚠')} design-system/ not found. Run ${c('cyan', 'npx octechpus design-system add')} first.`)
+    }
+    console.log('')
+
+    console.log(c('cyan', '  ═══════════════════════════════════════════════'))
+    console.log('')
+    if (dryRun) {
+      console.log(`  ${c('yellow', 'DRY RUN')} — No files were written`)
+    } else {
+      console.log(`  ${c('green', '✓')} Design system updated!`)
+    }
+    console.log('')
+
+  } else {
+    console.log(c('red', `  Unknown design-system subcommand: ${subcommand}`))
+    console.log(`  Available: ${c('cyan', 'add')}, ${c('cyan', 'update')}`)
+    process.exit(1)
+  }
+}
+
 // ═══════════════════════════════════════════════════════════
 // MAIN
 // ═══════════════════════════════════════════════════════════
 
 const args = process.argv.slice(2)
-const command = args.find(a => !a.startsWith('-')) || 'help'
 const flags = args.filter(a => a.startsWith('-'))
+const positional = args.filter(a => !a.startsWith('-'))
+
+// Support compound commands like "design-system add"
+const command = positional[0] || 'help'
+const subcommand = positional[1] || null
 
 const options = {
   force: flags.includes('--force'),
   minimal: flags.includes('--minimal'),
   dryRun: flags.includes('--dry-run'),
+  withDesignSystem: flags.includes('--with-design-system'),
 }
 
-// Target directory: either specified path or current directory
-const targetArg = args.find(a => !a.startsWith('-') && a !== command)
+// Target directory: positional arg that looks like a path (starts with . or /)
+const targetArg = positional.find(a => a !== command && a !== subcommand && (a.startsWith('.') || a.startsWith('/')))
 const targetDir = targetArg || process.cwd()
 
 switch (command) {
@@ -510,6 +650,9 @@ switch (command) {
     break
   case 'update':
     await commandUpdate(targetDir, options)
+    break
+  case 'design-system':
+    await commandDesignSystem(subcommand || 'add', targetDir, options)
     break
   case 'help':
   case '--help':
