@@ -19,6 +19,9 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Upgrade npm (Trusted Publishers requires npm >= 9.5)
+        run: npm install -g npm@latest
+
       - name: Check if version changed
         id: version_check
         run: |
