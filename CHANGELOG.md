@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-04-29
+
+### Fixed
+- Removed `assert` regex from `python-fastapi` forbidden_patterns (was incorrectly rejecting legitimate pytest usage)
+- `python-cli` profile structure cleaned up: framework moved to `cli.framework`, `testing.e2e` set to null
+- `python-ai-pipeline` review_checklist now includes inherited Python rules from parent (was overriding silently)
+- `security.md` template now uses stack-aware placeholders (`{{stack.validation.library}}` instead of hardcoded "Zod")
+- `audit.md` template parameterized — no longer mentions TypeScript/JSDoc in non-TS projects
+- `coder.md` numbering no longer skips when Designer is disabled
+- `docs.md` no longer renders broken section headers like `### .` when API field is null
+- `validateProfile` gives a clear error message when `_base.yaml` is missing
+
+### Added
+- Regression test for `python-ai-pipeline` review_checklist inheritance
+- Tests for security.md rendering across profiles
+- Tests for `update` command preserving user customizations
+- Tests for `update --force` overriding customizations
+
+---
+
 ## [2.0.0] - 2026-04-29
 
 ### Added
