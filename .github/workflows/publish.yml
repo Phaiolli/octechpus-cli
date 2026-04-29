@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   publish:
@@ -11,12 +12,15 @@ jobs:
     permissions:
       contents: read
 
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Check if version changed
@@ -32,8 +36,16 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Skip (version already published)
+        if: steps.version_check.outputs.changed == 'false'
+        run: echo "Version ${{ steps.version_check.outputs.current }} already on npm. Skipping."
+
       - name: Publish
         if: steps.version_check.outputs.changed == 'true'
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM }}
+
+      - name: Summary
+        if: steps.version_check.outputs.changed == 'true'
+        run: echo "Published octechpus@${{ steps.version_check.outputs.current }} to npm"
