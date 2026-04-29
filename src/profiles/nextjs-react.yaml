@@ -1,0 +1,19 @@
+extends: node-typescript
+name: nextjs-react
+description: "Next.js + React + Tailwind + shadcn/ui (com Designer ativo)"
+
+agents:
+  designer: true
+  cost_engineer: false
+
+frontend:
+  framework: nextjs_app_router
+  styling: tailwind_shadcn
+  icons: lucide
+
+forbidden_patterns:
+  - "bg-\\[#"
+  - "text-\\[#"
+  - "p-\\["
+  - "m-\\["
+  - "transition-all"

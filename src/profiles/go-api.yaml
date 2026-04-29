@@ -1,0 +1,57 @@
+extends: _base
+name: go-api
+description: "Go HTTP API (chi or stdlib + testify)"
+
+language: go
+runtime: "go>=1.21"
+package_manager: go_modules
+
+testing:
+  framework: go_test
+  fixtures: testify
+  http_mock: httptest
+  e2e: null
+  coverage_target: 80
+
+validation:
+  library: go_validator
+
+docs:
+  format: godoc
+  api: openapi
+
+linting:
+  formatter: gofmt
+  type_checker: null
+  config: .golangci.yml
+
+conventions:
+  imports: absolute
+  naming: camelCase_functions_PascalCase_exported
+
+agents:
+  designer: false
+  cost_engineer: false
+
+forbidden_patterns:
+  - "panic\\("
+  - "_ = err"
+  - "fmt\\.Println\\("
+  - "interface\\{\\}"
+
+guardrails:
+  read_only_paths: []
+
+review_checklist: |
+  - All errors are explicitly handled (no `_ = err`)
+  - Public functions have godoc comments
+  - Context is propagated through call chains
+  - No use of `interface{}` — use typed interfaces or generics
+  - HTTP handlers use structured logging, not fmt.Println
+
+qa_strategy: |
+  - go test for all packages
+  - testify for assertions and mocks
+  - httptest for HTTP handler tests
+  - Table-driven tests for logic-heavy functions
+  - Race detector enabled: `go test -race`

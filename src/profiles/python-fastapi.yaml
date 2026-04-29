@@ -1,0 +1,63 @@
+extends: _base
+name: python-fastapi
+description: "Python FastAPI backend with Pydantic v2 + pytest"
+
+language: python
+runtime: "python>=3.12"
+package_manager: uv
+
+testing:
+  framework: pytest
+  fixtures: factory_boy
+  http_mock: respx
+  e2e: playwright_python
+  coverage_target: 85
+
+validation:
+  library: pydantic_v2
+
+docs:
+  format: google_docstrings
+  api: fastapi_openapi
+
+linting:
+  formatter: ruff
+  type_checker: mypy_strict
+  config: pyproject.toml
+
+conventions:
+  imports: absolute
+  naming: snake_case_functions_PascalCase_classes
+
+agents:
+  designer: false
+  cost_engineer: false
+
+forbidden_patterns:
+  - "import \\*"
+  - "except Exception:\\s*pass"
+  - "print\\("
+  - "def .+\\(.*=\\[\\].*\\):"
+  - "def .+\\(.*=\\{\\}.*\\):"
+  - "# type: ignore(?! #)"
+  - "\\bassert\\b(?!.*#\\s*noqa)"
+
+guardrails:
+  read_only_paths: []
+
+review_checklist: |
+  - All public functions have type hints (parameters and return type)
+  - Error handling is explicit — no bare `except` or silent swallowing
+  - async/await usage is consistent throughout a request path
+  - SQLAlchemy sessions are properly scoped and closed
+  - Pydantic models used for all request/response bodies
+  - No mutable default arguments in function signatures
+  - Logger used instead of print() for all output
+
+qa_strategy: |
+  - pytest with fixtures for all test cases
+  - factory_boy for generating Pydantic/SQLAlchemy model instances
+  - respx for mocking external HTTP calls
+  - httpx.AsyncClient for testing FastAPI endpoints end-to-end
+  - pytest-cov for coverage; target 85% lines/branches
+  - Separate unit tests (no DB) and integration tests (real DB via testcontainers)

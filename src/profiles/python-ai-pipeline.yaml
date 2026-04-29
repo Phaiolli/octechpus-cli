@@ -1,0 +1,22 @@
+extends: python-fastapi
+name: python-ai-pipeline
+description: "Python AI/ML pipeline with LLM orchestration (FastAPI + workers + external providers)"
+
+agents:
+  cost_engineer: true
+
+forbidden_patterns:
+  - "anthropic\\.messages\\.create(?!.*cache)"
+  - "time\\.sleep\\("
+  - "@retry(?!.*max_attempts)"
+
+guardrails:
+  read_only_paths:
+    - "profiles/**/prompts/**"
+    - "comfy_workflows/*.json"
+
+review_checklist: |
+  - Toda chamada Anthropic passa pelo wrapper interno com cache
+  - Toda integração externa (RunPod, ElevenLabs, etc.) tem fake/mock em tests/fakes/
+  - Endpoints de webhook validam HMAC
+  - Tabelas multi-tenant têm `studio_id` (ou equivalente) declarado

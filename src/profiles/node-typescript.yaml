@@ -1,0 +1,61 @@
+extends: _base
+name: node-typescript
+description: "Node.js + TypeScript projects (Vitest + Zod + JSDoc)"
+
+language: typescript
+runtime: "node>=18"
+package_manager: npm
+
+testing:
+  framework: vitest
+  fixtures: vitest_factories
+  http_mock: msw
+  e2e: playwright
+  coverage_target: 80
+
+validation:
+  library: zod
+
+docs:
+  format: tsdoc
+  api: openapi
+
+linting:
+  formatter: prettier
+  type_checker: tsc_strict
+  config: tsconfig.json
+
+conventions:
+  imports: absolute_with_aliases
+  naming: camelCase_functions_PascalCase_classes
+
+agents:
+  designer: false
+  cost_engineer: false
+
+forbidden_patterns:
+  - "console\\.log\\("
+  - ": any"
+  - "as any"
+  - "// @ts-ignore"
+  - "<div onClick"
+  - "JSON\\.parse\\([^)]+\\)(?!.*catch)"
+
+guardrails:
+  read_only_paths: []
+
+review_checklist: |
+  - All new code uses TypeScript strict mode (no implicit any)
+  - Functions use explicit return types
+  - All external inputs validated with Zod schemas
+  - Error boundaries wrapping React subtrees where applicable
+  - No raw `fetch` without typed response parsing
+  - Imports use path aliases, not relative `../../` chains
+  - No dead code or commented-out blocks left behind
+
+qa_strategy: |
+  - Vitest unit tests for 100% of new public functions
+  - Testing Library for React component tests (user interactions, not implementation)
+  - MSW for mocking HTTP in integration tests
+  - Playwright for critical E2E flows
+  - Coverage threshold: 80% lines/branches

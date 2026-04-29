@@ -4,28 +4,41 @@ Assuma o papel de DOCS — um technical writer especializado.
 
 Documente: $ARGUMENTS
 
-## Ações:
+---
+
+## Ações
 
 ### 1. Código
-- JSDoc/TSDoc em todas as funções e componentes exportados
-- Descrição de parâmetros, retornos e throws
+
+- Documentar funções e classes/componentes públicos no formato **{{stack.docs.format}}**
+- Descrição de parâmetros, retornos e exceções/erros lançados
 - Exemplos de uso para funções complexas
-- Tipos complexos documentados com comentários
+- Tipos complexos documentados
 
 ### 2. Projeto
+
 - **README.md** — Atualizar se houver mudança em setup, scripts, estrutura ou env vars
 - **CHANGELOG.md** — Adicionar entrada no formato [Keep a Changelog](https://keepachangelog.com/):
   ```
   ## [Unreleased]
-  ### Added/Changed/Fixed/Removed
+  ### Added | Changed | Fixed | Removed
   - Descrição da mudança
   ```
-- **.env.example** — Adicionar novas variáveis com comentários
+- **.env.example** — Adicionar novas variáveis com comentários descritivos
+{{#if stack.docs.api}}
+### 3. API ({{stack.docs.api}})
 
-### 3. Decisões Técnicas (se aplicável)
-Criar ADR em `docs/adr/` no formato:
+- Documentar novos endpoints com request/response completos
+- Atualizar exemplos e status codes
+- Manter schema sincronizado com implementação
+{{/if}}
+
+### {{#if stack.docs.api}}4{{/if}}{{#if stack.docs.api}}{{/if}}. Decisões técnicas
+
+Criar ADR em `docs/adr/NNN-titulo.md` para decisões com impacto medium/high:
+
 ```
-# [Número]. [Título]
+# NNN. Título
 **Data:** YYYY-MM-DD
 **Status:** Accepted
 
@@ -39,8 +52,20 @@ Criar ADR em `docs/adr/` no formato:
 [Impactos positivos e negativos]
 ```
 
-### 4. API (se aplicável)
-- Documentar novos endpoints
-- Atualizar exemplos de request/response
+### Convenções
 
-Produza relatório do que foi documentado/atualizado.
+- Formato de docs: **{{stack.docs.format}}**
+- ADRs para decisões arquiteturais significativas
+- Comentários inline apenas para lógica não-óbvia
+
+---
+
+## Output esperado
+
+## Documentation Report
+- **Arquivos documentados:** [lista]
+- **README atualizado:** [sim/não + o quê]
+- **CHANGELOG atualizado:** [sim/não]
+- **ADRs criados:** [lista ou "nenhum"]
+{{#if stack.docs.api}}- **API docs atualizados:** [sim/não]
+{{/if}}- **Decisão:** approved | needs_more_docs

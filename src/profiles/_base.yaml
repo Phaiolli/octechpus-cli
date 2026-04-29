@@ -1,0 +1,61 @@
+name: _base
+description: >
+  Base profile inherited by all stacks. Contains universal rules, agent definitions,
+  and the list of required placeholders that concrete profiles must fill.
+
+# ── Agents ──────────────────────────────────────────────────────────────────
+agents:
+  maestro: true
+  github: true
+  architect: true
+  coder: true
+  reviewer: true
+  qa: true
+  security: true
+  docs: true
+  reporter: true
+  profiler: true
+  designer: false
+  cost_engineer: false
+
+# ── Pipeline ─────────────────────────────────────────────────────────────────
+pipeline_rules:
+  - No agent may be skipped without explicit justification from Maestro
+  - A rejection from any agent sends the work back to the responsible agent
+  - Reporter produces a final consolidated report after every pipeline run
+  - Agents communicate only through structured handoffs, not free-form chat
+
+# ── Conventions ──────────────────────────────────────────────────────────────
+commit_convention: conventional_commits
+
+branch_naming: "[type]/[issue-number]-[description]"
+
+# ── Documentation ─────────────────────────────────────────────────────────────
+documentation:
+  adr_required_for: ["medium", "high"]
+  changelog_format: keep_a_changelog
+  readme_required: true
+
+# ── Security ──────────────────────────────────────────────────────────────────
+security:
+  owasp_top_10: true
+  secret_scanning: true
+
+# ── Required placeholders ─────────────────────────────────────────────────────
+# Concrete profiles MUST fill all of these. init fails if any is missing.
+required_placeholders:
+  - language
+  - runtime
+  - package_manager
+  - testing.framework
+  - testing.coverage_target
+  - validation.library
+  - docs.format
+  - linting.formatter
+  - linting.type_checker
+  - conventions.imports
+  - conventions.naming
+  - forbidden_patterns
+  - guardrails.read_only_paths
+  - review_checklist
+  - qa_strategy

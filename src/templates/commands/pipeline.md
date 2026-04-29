@@ -8,74 +8,92 @@ Execute o pipeline completo de agentes para a seguinte demanda:
 
 ## Classificação de demanda e roteamento
 
-Antes de executar, identifique o tipo da demanda e selecione o pipeline correto:
-
+Identifique o tipo da demanda e selecione o pipeline correto:
+{{#if stack.agents.designer}}
 ### UI / Frontend
-**Sinais:** palavras-chave como "tela", "página", "componente", "layout", "form", "tabela", "card", "modal", "sidebar", "topbar", "responsivo", "design", "interface", "estilo", "cor"; arquivos em `src/components/`, `src/app/**/page.tsx`, `src/features/**/components/`; handoff bundle do Claude Design anexado.
+**Sinais:** "tela", "página", "componente", "layout", "form", "tabela", "card", "modal", "sidebar", "topbar", "responsivo", "design", "interface", "estilo"; arquivos em `src/components/`, `src/app/**/page.*`, `src/features/**/components/`
 
-**Pipeline:** GitHub → Architect → **Designer** → Coder → Reviewer (com checklist do Designer) → QA → Security → Docs → Reporter
+**Pipeline:** GitHub → Architect → **Designer** → Coder → Reviewer → QA → Security → {{#if stack.agents.cost_engineer}}Cost Engineer → {{/if}}Docs → Reporter
+{{/if}}
 
-### Backend
-**Sinais:** "API", "endpoint", "rota", "service", "repository", "DTO", "schema", "migration", "job", "queue".
+### Backend / Server
+**Sinais:** "API", "endpoint", "service", "repository", "schema", "migration", "job", "queue"
 
-**Pipeline:** GitHub → Architect → Coder → Reviewer → QA → Security → Docs → Reporter
+**Pipeline:** GitHub → Architect → Coder → Reviewer → QA → Security → {{#if stack.agents.cost_engineer}}Cost Engineer → {{/if}}Docs → Reporter
 
-### Refactor sem UI
-**Pipeline:** GitHub → Architect → Coder → Reviewer → QA → Security → Docs → Reporter
+### Refactor (sem mudança comportamental)
 
-### Misto (UI + Backend)
-**Pipeline:** GitHub → Architect → **Designer** (UI) ‖ Coder (backend) → Coder (UI) → Reviewer → QA → Security → Docs → Reporter
+**Pipeline:** GitHub → Architect → Coder → Reviewer → QA → Docs → Reporter
+{{#if stack.agents.cost_engineer}}
+### Provider Integration
+**Sinais:** integração com API externa paga, configuração de provider, retry policies
+
+**Pipeline:** GitHub → Architect → Coder → Reviewer → Cost Engineer → Security → QA → Docs → Reporter
+{{/if}}
+
+### Prompt Update (projetos AI/ML)
+**Sinais:** modificação em `profiles/**/prompts/**`, label `prompt-update`
+
+**Pipeline:** Bypass — apenas review humano + commit. Sem agentes automatizados.
+
+### Misto
+**Pipeline:** composição das categorias acima conforme impacto
 
 ---
 
-## Instruções
+## Instruções de Execução
 
-Você deve executar TODOS os agentes aplicáveis na ordem especificada. Para cada agente, assuma o papel descrito, execute a análise/ação e produza o output no formato definido. Só passe ao próximo agente após concluir o atual.
-
-### Ordem de Execução (pipeline completo com UI):
+Execute TODOS os agentes aplicáveis na ordem especificada. Para cada agente, assuma o papel descrito, execute a análise/ação e produza o output no formato definido. Só passe ao próximo após concluir o atual.
 
 **1. 🎯 MAESTRO** — Classifique a demanda (tipo, severidade) e selecione o pipeline de acordo com as regras acima.
 
-**2. 🐙 GITHUB (Fase 1)** — Crie a issue com o template padrão, defina branch name e labels. Use `gh` CLI para criar a issue e branch no repositório.
+**2. 🐙 GITHUB (Fase 1)** — Crie a issue com template padrão, defina branch name e labels. Use `gh` CLI.
 
-**3. 📐 ARCHITECT** — Analise o impacto arquitetural, valide padrões, proponha a estrutura de implementação. Decida: approved/needs_changes/rejected.
+**3. 📐 ARCHITECT** — Analise impacto arquitetural, valide padrões, proponha estrutura de implementação. Decida: approved / needs_changes / rejected.
+{{#if stack.agents.designer}}
+**4. 🎨 DESIGNER** *(somente em demandas de UI)* — Leia o design system em `./design-system/` e produza briefing técnico para o Coder. Inclui: layout, componentes shadcn, tokens, estados, responsividade e checklist para o Reviewer.
+{{/if}}
+**5. 💻 CODER** — Implemente seguindo estritamente o plano do ARCHITECT{{#if stack.agents.designer}} e (quando aplicável) o briefing do DESIGNER{{/if}}. Código tipado, limpo, com error handling.
 
-**4. 🎨 DESIGNER** *(somente em demandas de UI)* — Leia o design system em `./design-system/` e produza o briefing técnico completo que o Coder vai seguir. Inclui: layout, componentes shadcn, tokens, estados, responsividade e checklist para o Reviewer.
+**6. 🔍 REVIEWER** — Code review completo. Classifique issues como 🔴 BLOCKER / 🟡 WARNING / 🔵 SUGGESTION.{{#if stack.agents.designer}} Em PRs de UI, aplique também a checklist do design system.{{/if}} Se houver blockers, corrija antes de prosseguir.
 
-**5. 💻 CODER** — Implemente seguindo estritamente o plano do ARCHITECT e (quando aplicável) o briefing do DESIGNER. Código tipado, limpo, com error handling.
+**7. 🧪 QA** — Crie testes usando {{stack.testing.framework}}. Garanta cobertura de happy paths, error paths e edge cases. Target: {{stack.testing.coverage_target}}%.
 
-**6. 🔍 REVIEWER** — Faça code review de tudo que foi implementado. Classifique issues como 🔴 BLOCKER / 🟡 WARNING / 🔵 SUGGESTION. Em PRs de UI, aplique também a checklist do design system. Se houver blockers, corrija antes de prosseguir.
+**8. 🛡️ SECURITY** — Audit de segurança: XSS, injection, CSRF, IDOR, dados sensíveis, validação de inputs. Classifique por severidade.
+{{#if stack.agents.cost_engineer}}
+**9. 💰 COST ENGINEER** — Audit de custo: chamadas a APIs pagas, retries, loops, estimativa de custo da feature.
+{{/if}}
+**10. 📚 DOCS** — Documente no formato {{stack.docs.format}}: exports públicos, README/CHANGELOG, ADRs se necessário.
 
-**7. 🧪 QA** — Crie testes unitários (Vitest), de integração e defina cenários E2E (Playwright). Garanta cobertura dos happy paths, error paths e edge cases.
+**11. 🐙 GITHUB (Fase 2)** — Commits semânticos (Conventional Commits), PR com template completo incluindo relatório de todos os agentes. Use `gh` CLI.
 
-**8. 🛡️ SECURITY** — Faça audit de segurança: XSS, injection, CSRF, IDOR, dados sensíveis, validação de inputs. Classifique vulnerabilidades por severidade.
+**12. 📊 REPORTER** — Relatório final consolidado com métricas, status de cada agente, débitos técnicos e próximos passos.
 
-**9. 📚 DOCS** — Documente: JSDoc/TSDoc em exports, atualize README/CHANGELOG, crie ADRs se necessário.
+---
 
-**10. 🐙 GITHUB (Fase 2)** — Prepare commits semânticos (Conventional Commits), crie PR com template completo incluindo relatório de todos os agentes. Use `gh` CLI.
+## Tabela de Agentes
 
-**11. 📊 REPORTER** — Gere relatório final consolidado com métricas, status de cada agente, débitos técnicos e próximos passos.
-
-| #   | Agente | Função |
-|-----|--------|--------|
-| 1   | 🎯 Maestro | Orquestra, classifica e roteia pelo pipeline correto |
-| 2   | 🐙 GitHub | Issues, branches, commits, PRs |
-| 3   | 📐 Architect | Impacto e planejamento técnico |
-| 4   | 🎨 Designer | Guardião do design system. Produz briefing técnico para o Coder em demandas de UI |
-| 5   | 💻 Coder | Implementação |
-| 6   | 🔍 Reviewer | Code review com severidade + checklist do design system em PRs de UI |
-| 7   | 🧪 QA | Testes unitários, integração e E2E |
-| 8   | 🛡️ Security | OWASP Top 10 + vulnerabilidades |
-| 9   | 📚 Docs | JSDoc, README, CHANGELOG, ADRs |
-| 10  | 🐙 GitHub | Commits semânticos e PR final |
-| 11  | 📊 Reporter | Relatório final com métricas |
+| # | Agente | Função |
+|---|--------|--------|
+| 1 | 🎯 Maestro | Orquestra, classifica e roteia |
+| 2 | 🐙 GitHub | Issues, branches, commits, PRs |
+| 3 | 📐 Architect | Impacto e planejamento técnico |
+{{#if stack.agents.designer}}| 4 | 🎨 Designer | Guardião do design system — briefing técnico para UI |
+{{/if}}| 5 | 💻 Coder | Implementação |
+| 6 | 🔍 Reviewer | Code review + checklist de stack |
+| 7 | 🧪 QA | Testes ({{stack.testing.framework}}) |
+| 8 | 🛡️ Security | OWASP Top 10 + vulnerabilidades |
+{{#if stack.agents.cost_engineer}}| 9 | 💰 Cost Engineer | Audit de custo operacional |
+{{/if}}| 10 | 📚 Docs | {{stack.docs.format}}, README, CHANGELOG, ADRs |
+| 11 | 🐙 GitHub | Commits semânticos e PR final |
+| 12 | 📊 Reporter | Relatório final com métricas |
 
 ---
 
 ## Regras
 
 - ❌ Nenhum agente aplicável pode ser pulado
-- 🎨 O Designer é obrigatório em qualquer demanda que toque UI
 - 🔄 Se qualquer agente rejeitar, volte ao agente relevante e corrija
-- 📝 Mostre o output formatado de CADA agente
+- 📝 Mostre o output formatado de CADA agente antes de prosseguir
 - ✅ Só considere completo quando TODOS aprovarem
+- 📋 Relatório final incluído no PR description

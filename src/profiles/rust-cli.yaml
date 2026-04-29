@@ -1,0 +1,58 @@
+extends: _base
+name: rust-cli
+description: "Rust CLI tool (clap + tokio)"
+
+language: rust
+runtime: "rust>=1.75"
+package_manager: cargo
+
+testing:
+  framework: cargo_test
+  fixtures: null
+  http_mock: mockito
+  e2e: null
+  coverage_target: 75
+
+validation:
+  library: serde
+
+docs:
+  format: rustdoc
+  api: null
+
+linting:
+  formatter: rustfmt
+  type_checker: null
+  config: Cargo.toml
+
+conventions:
+  imports: absolute
+  naming: snake_case_functions_PascalCase_types
+
+agents:
+  designer: false
+  cost_engineer: false
+
+forbidden_patterns:
+  - "\\.unwrap\\(\\)(?!.*#\\[cfg\\(test\\)\\])"
+  - "println!\\("
+  - "unsafe \\{"
+  - "todo!\\(\\)"
+  - "unimplemented!\\(\\)"
+
+guardrails:
+  read_only_paths: []
+
+review_checklist: |
+  - `unwrap()` only allowed in tests — use `?` or explicit error handling in production code
+  - All public items have rustdoc comments
+  - No `unsafe` blocks without safety comment explaining the invariant
+  - Clippy warnings treated as errors in CI
+  - No `println!` in library code — use `log` crate
+
+qa_strategy: |
+  - cargo test for all unit and integration tests
+  - Integration tests in tests/ directory (not inline)
+  - mockito for HTTP mocking
+  - cargo-tarpaulin for coverage reporting
+  - cargo clippy --deny warnings in CI

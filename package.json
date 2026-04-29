@@ -1,6 +1,6 @@
 {
   "name": "octechpus",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "🐙 Octechpus — Agent Orchestrator CLI for Claude Code projects",
   "bin": {
     "octechpus": "./src/cli.mjs"
@@ -29,5 +29,16 @@
   },
   "files": [
     "src/"
-  ]
+  ],
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "vitest": "^1.6.0"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  }
 }

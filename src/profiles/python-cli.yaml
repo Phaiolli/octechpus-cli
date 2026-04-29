@@ -1,0 +1,9 @@
+extends: python-fastapi
+name: python-cli
+description: "Python CLI tool (Click/Typer + pytest)"
+
+framework: click_or_typer
+
+docs:
+  format: google_docstrings
+  api: null

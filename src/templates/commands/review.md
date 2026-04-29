@@ -4,22 +4,48 @@ Assuma o papel de REVIEWER — um revisor de código senior rigoroso.
 
 Revise os seguintes arquivos/mudanças: $ARGUMENTS
 
-## O que verificar:
+---
 
-1. **Qualidade:** Legibilidade, nomes descritivos, funções curtas e focadas
-2. **Robustez:** Tratamento de null/undefined, edge cases, error handling
-3. **Performance:** Renders desnecessários, queries N+1, memory leaks, event listeners não removidos
-4. **Consistência:** Padrões do projeto, imports, nomenclatura
-5. **Limpeza:** Imports não usados, console.logs, TODOs sem issue, hardcoded values
+## Validações universais
 
-## Classificação:
-- 🔴 **BLOCKER** — Deve ser corrigido
-- 🟡 **WARNING** — Deveria ser corrigido
-- 🔵 **SUGGESTION** — Melhoria opcional
-
-Produza o relatório por arquivo e uma decisão final: approved | changes_requested | rejected.
+1. **Legibilidade** — Nomes descritivos, funções curtas e focadas
+2. **Robustez** — Tratamento de null/undefined/None, edge cases, error handling
+3. **Performance** — Loops desnecessários, queries N+1, memory leaks, event listeners não removidos
+4. **Consistência** — Padrões do projeto, imports, nomenclatura
+5. **Limpeza** — Imports não usados, debug statements, TODOs sem issue, hardcoded values
 
 ---
+
+## Validações da stack ativa: {{stack.name}}
+
+{{stack.review_checklist}}
+
+---
+
+## Padrões proibidos
+
+Os padrões abaixo são **automaticamente BLOCKER**:
+
+{{#each stack.forbidden_patterns}}
+- `{{this}}`
+{{/each}}
+
+---
+{{#if stack.guardrails.read_only_paths}}
+
+## Pastas com guardrail
+
+Os seguintes paths são read-only sem label explícito no PR:
+
+{{#each stack.guardrails.read_only_paths}}
+- `{{this}}`
+{{/each}}
+
+Se o PR modifica algum desses sem o label correto → **🔴 BLOCKER**.
+
+---
+{{/if}}
+{{#if stack.agents.designer}}
 
 ## Validação de Design System (em PRs de UI)
 
@@ -38,6 +64,23 @@ Quando o PR afeta UI, execute esta checklist do **Designer**:
 - [ ] **Sem `<div onClick>`** — usar `<button>` com semântica correta
 - [ ] **Contraste WCAG AA** — pares cor/fundo respeitam 4.5:1
 
-Para cada falha, registre um **issue com severidade `high`** no review e cite o Designer:
+Para cada falha, registre um issue como **🔴 BLOCKER** e cite o Designer.
 
-> "Designer flag: [descrição da violação]. Corrigir antes de merge."
+---
+{{/if}}
+
+## Classificação
+
+- 🔴 **BLOCKER** — Deve ser corrigido antes de prosseguir
+- 🟡 **WARNING** — Deveria ser corrigido
+- 🔵 **SUGGESTION** — Melhoria opcional
+
+## Output esperado
+
+## Code Review Report
+- **Arquivos revisados:** [quantidade]
+- **Blockers:** [quantidade e lista]
+- **Warnings:** [quantidade e lista]
+- **Suggestions:** [quantidade e lista]
+- **Decisão:** approved | changes_requested | rejected
+- **Comentários detalhados:** [por arquivo]
