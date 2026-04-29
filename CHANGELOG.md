@@ -5,6 +5,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-04-29
+
+### Added
+- **Profile system** — declarative YAML stack profiles; each profile defines agents, conventions, testing strategy, forbidden patterns, and doc format for a specific language/framework
+- 7 built-in profiles: `python-fastapi`, `python-ai-pipeline`, `python-cli`, `nextjs-react`, `node-typescript`, `go-api`, `rust-cli`
+- Profile inheritance via `extends` key — child profiles deep-merge over parent
+- `src/lib/profile-loader.mjs` — loads and resolves profile inheritance
+- `src/lib/stack-detector.mjs` — auto-detects stack from project files with confidence levels (high/medium/low/none)
+- `src/lib/template-renderer.mjs` — renders `{{placeholder}}` tokens in templates using resolved profile values
+- `src/lib/file-ops.mjs` — shared file write/hash utilities
+- 🔬 **Profiler agent** (`/profiler`) — reports detected stack and suggests the matching profile
+- 💰 **Cost Engineer agent** (`/cost-engineer`) — guards against runaway API spend; activated by `python-ai-pipeline`
+- CLI flag `--stack=<profile>` on `init` — skips auto-detection
+- Sub-commands `profile list`, `profile show <name>`, `profile current`, `profile switch <name>`
+- `commandUpdate` now compares SHA-256 hashes stored in `.octechpus/manifest.json` and skips user-customized files by default
+- Flag `--keep-customizations` (default: `true`); `--force` overrides and updates everything
+- `commandStatus` shows active profile and detects drift (declared profile vs detected stack)
+- `commandDoctor` checks profile drift and suggests `profile switch` to fix
+- 74 automated tests (Vitest) covering profile-loader, stack-detector, template-renderer, cli-init, and cli-profile-commands
+- `docs/profiles.md` — contributor guide for creating custom profiles
+
+### Changed
+- All agent command templates (`commands/*.md`) now use `{{placeholder}}` tokens instead of hardcoded stack references — prompts are stack-agnostic
+- `init` auto-detects stack and only installs agents active in the resolved profile (e.g. `cost-engineer.md` is not created unless profile enables it)
+- `commandUpdate` re-renders templates with current profile on update
+- `printHelp()` updated to list all new commands and flags
+- `docs/AGENTS.md` renamed to `docs/OCTECHPUS_AGENTS.md` — update any bookmarks
+- `package.json` version bumped to `2.0.0`; added `js-yaml` dependency and `vitest` devDependency
+
+### Breaking changes
+
+- **`CLAUDE.md` structure** — now has a `Stack Profile` block at the top generated from the profile. Existing `CLAUDE.md` files are merged on `init` (your content is preserved below the generated section), but the file format changed.
+- **`docs/AGENTS.md` → `docs/OCTECHPUS_AGENTS.md`** — update any links or references in your projects.
+- **Agent commands are now profile-filtered** — if you `update` from 1.x, commands not active in your profile will not be refreshed. Run `octechpus update --force` to force a full refresh.
+
+### Migration from 1.x
+
+```bash
+npm install -g github:Phaiolli/octechpus-cli
+cd your-project
+octechpus init        # detects stack, merges CLAUDE.md, refreshes commands
+octechpus status      # verify
+octechpus doctor      # fix any drift
+```
+
+See the [Migration from 1.x](README.md#migration-from-1x) section in the README for details.
+
+---
+
 ## [1.1.0] - 2026-04-27
 
 ### Added
