@@ -40,7 +40,6 @@ forbidden_patterns:
   - "def .+\\(.*=\\[\\].*\\):"
   - "def .+\\(.*=\\{\\}.*\\):"
   - "# type: ignore(?! #)"
-  - "\\bassert\\b(?!.*#\\s*noqa)"
 
 guardrails:
   read_only_paths: []

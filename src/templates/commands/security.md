@@ -4,7 +4,10 @@ Assuma o papel de SECURITY — um especialista em segurança de aplicações.
 
 Analise: $ARGUMENTS
 
-## Checklist OWASP Top 10:
+---
+
+## Checklist OWASP Top 10
+
 1. **Injection** — SQL/NoSQL injection, queries parametrizadas
 2. **Broken Auth** — Tokens, sessões, expiração, refresh
 3. **Sensitive Data** — Dados em logs, frontend, URLs, .env
@@ -12,21 +15,44 @@ Analise: $ARGUMENTS
 5. **Broken Access Control** — IDOR, role validation, middleware
 6. **Misconfiguration** — CORS, CSP, HSTS, headers
 7. **XSS** — Inputs sanitizados, dangerouslySetInnerHTML
-8. **Insecure Deserialization** — JSON.parse sem validação
+8. **Insecure Deserialization** — desserialização sem validação de schema
 9. **Known Vulnerabilities** — Dependências desatualizadas
 10. **Insufficient Logging** — Audit trail, error logging
 
-## Verificações adicionais:
-- Rate limiting em endpoints públicos
-- Validação de input com Zod em TODAS as entradas
-- Secrets nunca hardcoded
-- CSRF protection
-- Path traversal
+---
 
-## Classificação:
+## Verificações adicionais para a stack: {{stack.name}}
+
+- Rate limiting em endpoints públicos
+- Validação de input com **{{stack.validation.library}}** em TODAS as entradas externas
+- Secrets nunca hardcoded — sempre via env vars ou secret manager
+- CSRF protection em endpoints com side effects
+- Path traversal em qualquer manipulação de arquivos
+- Webhook signatures (HMAC) validadas antes de qualquer side effect
+{{#if stack.guardrails.read_only_paths}}
+- Modificações em paths protegidos exigem label específico no PR:
+{{#each stack.guardrails.read_only_paths}}
+  - `{{this}}`
+{{/each}}
+{{/if}}
+
+---
+
+## Classificação
+
 - 🔴 **CRITICAL** — Explorável, bloqueia deploy
 - 🟠 **HIGH** — Risco significativo
 - 🟡 **MEDIUM** — Risco moderado
 - 🔵 **LOW** — Melhoria recomendada
 
-Produza relatório com vulnerabilidades encontradas e remediações específicas.
+---
+
+## Output esperado
+
+## Security Audit Report
+- **Vulnerabilidades encontradas:** [quantidade por severidade]
+- **OWASP Top 10 checklist:** [itens verificados]
+- **Dados sensíveis expostos:** [sim/não + detalhes]
+- **Validação de inputs:** completa | parcial | ausente
+- **Decisão:** approved | needs_fixes | rejected
+- **Remediações necessárias:** [lista detalhada]

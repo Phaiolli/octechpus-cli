@@ -2,8 +2,12 @@ extends: python-fastapi
 name: python-cli
 description: "Python CLI tool (Click/Typer + pytest)"
 
-framework: click_or_typer
+testing:
+  e2e: null
 
 docs:
   format: google_docstrings
   api: null
+
+cli:
+  framework: click_or_typer
