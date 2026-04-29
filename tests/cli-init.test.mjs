@@ -127,6 +127,54 @@ describe('init — interactive profile selection (empty folder)', () => {
   })
 })
 
+// ── update — preserves customizations ────────────────────────────────────────
+
+describe('update — customization preservation', () => {
+  let tmpDir
+
+  afterEach(() => {
+    if (tmpDir) rmSync(tmpDir, { recursive: true, force: true })
+  })
+
+  it('preserves a manually-edited command file across update', () => {
+    tmpDir = makeTmpDir()
+    runCLI(['init', '--stack=node-typescript'], { cwd: tmpDir })
+
+    const reviewPath = join(tmpDir, '.claude', 'commands', 'review.md')
+    const customMarker = '<!-- CUSTOM EDIT BY USER -->'
+    const original = readFileSync(reviewPath, 'utf-8')
+    writeFileSync(reviewPath, original + '\n\n' + customMarker, 'utf-8')
+
+    runCLI(['update'], { cwd: tmpDir })
+
+    const after = readFileSync(reviewPath, 'utf-8')
+    expect(after).toContain(customMarker)
+  })
+
+  it('updates a non-customized file when update is run', () => {
+    tmpDir = makeTmpDir()
+    runCLI(['init', '--stack=node-typescript'], { cwd: tmpDir })
+
+    const result = runCLI(['update'], { cwd: tmpDir })
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('Updated')
+  })
+
+  it('overrides customizations when --force is passed', () => {
+    tmpDir = makeTmpDir()
+    runCLI(['init', '--stack=node-typescript'], { cwd: tmpDir })
+
+    const reviewPath = join(tmpDir, '.claude', 'commands', 'review.md')
+    const customMarker = '<!-- WILL BE OVERRIDDEN -->'
+    writeFileSync(reviewPath, customMarker, 'utf-8')
+
+    runCLI(['update', '--force'], { cwd: tmpDir })
+
+    const after = readFileSync(reviewPath, 'utf-8')
+    expect(after).not.toContain(customMarker)
+  })
+})
+
 // ── error handling ────────────────────────────────────────────────────────────
 
 describe('init — error cases', () => {
