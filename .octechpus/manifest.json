@@ -1,0 +1,18 @@
+{
+  "version": "2.0.0",
+  "profile": "node-typescript",
+  "installedAt": "2026-04-29T18:19:25.110Z",
+  "files": {
+    ".claude/commands/pipeline.md": "5862c5633813534f",
+    ".claude/commands/audit.md": "683cb6869982f799",
+    ".claude/commands/architect.md": "5f64022a34c1e53f",
+    ".claude/commands/coder.md": "c04f387760753d94",
+    ".claude/commands/review.md": "3a6c05a02a5525d0",
+    ".claude/commands/qa.md": "5ce43ea4c77b3aa2",
+    ".claude/commands/security.md": "3787cba6595512bd",
+    ".claude/commands/docs.md": "1d100e99620c483c",
+    ".claude/commands/github-issue.md": "70a6e946f3e99ccc",
+    ".claude/commands/profiler.md": "4e1bd3dc3fa05c33",
+    "CLAUDE.md": "f06c507806f5bd30"
+  }
+}
