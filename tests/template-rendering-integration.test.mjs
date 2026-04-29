@@ -178,3 +178,31 @@ describe('pipeline.md — nextjs-react', () => {
     expect(result).toContain('DESIGNER')
   })
 })
+
+// ── security.md ──────────────────────────────────────────────────────────────
+
+describe('security.md — python-fastapi', () => {
+  it('mentions pydantic_v2 as validation library', () => {
+    const result = render('commands/security.md', 'python-fastapi')
+    expect(result).toContain('pydantic_v2')
+  })
+
+  it('does NOT mention Zod', () => {
+    const result = render('commands/security.md', 'python-fastapi')
+    expect(result).not.toContain('Zod')
+  })
+})
+
+describe('security.md — node-typescript', () => {
+  it('mentions zod as validation library', () => {
+    const result = render('commands/security.md', 'node-typescript')
+    expect(result).toContain('zod')
+  })
+})
+
+describe('security.md — python-ai-pipeline', () => {
+  it('renders read_only_paths block (guardrails non-empty)', () => {
+    const result = render('commands/security.md', 'python-ai-pipeline')
+    expect(result).toContain('profiles/**/prompts/**')
+  })
+})

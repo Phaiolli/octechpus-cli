@@ -67,7 +67,15 @@ export function resolveProfile(name) {
 }
 
 export function validateProfile(profile) {
-  const base = loadProfile('_base')
+  let base
+  try {
+    base = loadProfile('_base')
+  } catch {
+    throw new Error(
+      `Cannot validate profile "${profile.name}": _base.yaml is missing or invalid. ` +
+      `This is a critical file — restore it from the octechpus-cli repository.`
+    )
+  }
   const required = base.required_placeholders || []
   const missing = []
 

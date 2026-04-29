@@ -9,12 +9,14 @@ Implementar: $ARGUMENTS
 ## Princípios
 
 1. SEGUIR estritamente o plano do ARCHITECT
-{{#if stack.agents.designer}}2. SEGUIR o briefing do DESIGNER em demandas de UI
-{{/if}}3. Código tipado quando a linguagem suporta
-4. Tratamento de erros explícito
-5. Nomes descritivos e autoexplicativos
-6. DRY sem premature abstraction
-7. Comentários apenas onde a lógica não é evidente pelo código
+2. Código tipado quando a linguagem suporta
+3. Tratamento de erros explícito
+4. Nomes descritivos e autoexplicativos
+5. DRY sem premature abstraction
+6. Comentários apenas onde a lógica não é evidente pelo código
+{{#if stack.agents.designer}}
+**Em demandas de UI:** seguir também o briefing do DESIGNER (componentes shadcn, tokens, estados completos).
+{{/if}}
 
 ---
 

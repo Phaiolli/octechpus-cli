@@ -31,11 +31,11 @@ Você deve executar TODOS os agentes abaixo na ordem especificada, analisando o 
 ### 3. 🔍 REVIEWER — Audit de Qualidade de Código
 - Revise os módulos principais do projeto
 - Identifique padrões de código inconsistentes
-- Busque: código morto, imports não usados, console.logs, TODO/FIXME
+- Busque: código morto, imports não usados, debug statements esquecidos, TODO/FIXME sem issue
 - Avalie nomes de variáveis, funções e componentes
 - Identifique funções muito longas ou complexas
 - Verifique tratamento de erros (try/catch, error boundaries)
-- Avalie tipagem TypeScript (uso de `any`, tipos faltantes)
+- Avalie tipagem da linguagem ({{stack.language}}) — uso de tipos genéricos vs específicos
 - **Score:** Qualidade de Código [1-10]
 
 ### 4. 🧪 QA — Audit de Testes
@@ -59,7 +59,7 @@ Você deve executar TODOS os agentes abaixo na ordem especificada, analisando o 
 ### 6. 📚 DOCS — Audit de Documentação
 - Verifique existência e qualidade do README.md
 - Verifique se .env.example existe e está completo
-- Avalie documentação de código (JSDoc/TSDoc em exports)
+- Avalie documentação de código no formato {{stack.docs.format}} em exports/funções públicas
 - Verifique existência de CHANGELOG.md
 - Avalie documentação de API (se aplicável)
 - Identifique áreas sem documentação que precisam

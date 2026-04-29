@@ -16,7 +16,15 @@ guardrails:
     - "comfy_workflows/*.json"
 
 review_checklist: |
+  - All public functions have type hints (parameters and return type)
+  - Error handling is explicit — no bare `except` or silent swallowing
+  - async/await usage is consistent throughout a request path
+  - SQLAlchemy sessions are properly scoped and closed
+  - Pydantic models used for all request/response bodies
+  - No mutable default arguments in function signatures
+  - Logger used instead of print() for all output
   - Toda chamada Anthropic passa pelo wrapper interno com cache
   - Toda integração externa (RunPod, ElevenLabs, etc.) tem fake/mock em tests/fakes/
   - Endpoints de webhook validam HMAC
   - Tabelas multi-tenant têm `studio_id` (ou equivalente) declarado
+  - Retry decorators sempre com `max_attempts` e backoff exponencial

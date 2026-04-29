@@ -59,6 +59,17 @@ describe('resolveProfile', () => {
     // From nextjs-react itself
     expect(patterns.some(p => p.includes('transition-all'))).toBe(true)
   })
+
+  it('python-ai-pipeline review_checklist contains both Python and AI rules', () => {
+    const profile = resolveProfile('python-ai-pipeline')
+    const checklist = profile.review_checklist
+    // From parent (python-fastapi)
+    expect(checklist).toContain('type hints')
+    expect(checklist).toContain('Pydantic')
+    // Own additions
+    expect(checklist).toContain('Anthropic')
+    expect(checklist).toContain('HMAC')
+  })
 })
 
 describe('validateProfile', () => {

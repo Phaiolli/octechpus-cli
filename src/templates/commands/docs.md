@@ -8,14 +8,14 @@ Documente: $ARGUMENTS
 
 ## Ações
 
-### 1. Código
+### Código
 
 - Documentar funções e classes/componentes públicos no formato **{{stack.docs.format}}**
 - Descrição de parâmetros, retornos e exceções/erros lançados
 - Exemplos de uso para funções complexas
 - Tipos complexos documentados
 
-### 2. Projeto
+### Projeto
 
 - **README.md** — Atualizar se houver mudança em setup, scripts, estrutura ou env vars
 - **CHANGELOG.md** — Adicionar entrada no formato [Keep a Changelog](https://keepachangelog.com/):
@@ -26,14 +26,14 @@ Documente: $ARGUMENTS
   ```
 - **.env.example** — Adicionar novas variáveis com comentários descritivos
 {{#if stack.docs.api}}
-### 3. API ({{stack.docs.api}})
+### API ({{stack.docs.api}})
 
 - Documentar novos endpoints com request/response completos
 - Atualizar exemplos e status codes
 - Manter schema sincronizado com implementação
 {{/if}}
 
-### {{#if stack.docs.api}}4{{/if}}{{#if stack.docs.api}}{{/if}}. Decisões técnicas
+### Decisões técnicas
 
 Criar ADR em `docs/adr/NNN-titulo.md` para decisões com impacto medium/high:
 
