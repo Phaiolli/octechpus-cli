@@ -6,6 +6,9 @@ agents:
   designer: true
   cost_engineer: false
 
+design_system:
+  tokens: tailwind
+
 frontend:
   framework: nextjs_app_router
   styling: tailwind_shadcn

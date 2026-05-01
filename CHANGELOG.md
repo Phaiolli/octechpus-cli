@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-05-01
+
+### Added
+- **`design_system.tokens` profile key** — controls which design tokens are installed per stack: `tailwind` (preset + CSS), `css-only` (CSS variables only), `none` (skipped). Configured in `_base.yaml` (default: `none`) and overridden per profile.
+- **`copyDir` `exclude` option** — `file-ops.mjs` now accepts a `Set<string>` of relative paths to skip during directory copy; used to filter token files based on profile.
+
+### Changed
+- **All 12 agent commands always installed** — `design.md` and `cost-engineer.md` are no longer gated by `profile.agents.designer` / `profile.agents.cost_engineer`; every `octechpus init` installs the full command set regardless of profile.
+- **Design system always installed** — `design-system/` folder is now part of every `init` run; token files are filtered by `profile.design_system.tokens` instead of being skipped entirely.
+- **Stack-aware tokens per profile:**
+  - `nextjs-react` → `tailwind` (Tailwind preset + CSS tokens)
+  - `node-typescript` → `css-only` (CSS tokens only)
+  - `python-fastapi` → `css-only` (CSS tokens only)
+  - `go-api`, `rust-cli`, `python-cli`, `python-ai-pipeline` → `none` (no token files)
+- `getActiveCommands()` simplified — no longer accepts arguments; always returns all 12 commands.
+
 ## [2.1.0] - 2026-05-01
 
 ### Added

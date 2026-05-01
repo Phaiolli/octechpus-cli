@@ -36,6 +36,10 @@ documentation:
   changelog_format: keep_a_changelog
   readme_required: true
 
+# ── Design System ─────────────────────────────────────────────────────────────
+design_system:
+  tokens: none   # none | css-only | tailwind
+
 # ── Security ──────────────────────────────────────────────────────────────────
 security:
   owasp_top_10: true

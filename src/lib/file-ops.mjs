@@ -42,16 +42,22 @@ export function writeFile(filepath, content, options = {}) {
   return true
 }
 
-export function copyDir(srcDir, destDir, options = {}) {
-  const { force = false, dryRun = false } = options
+export function copyDir(srcDir, destDir, options = {}, _rootSrc = null) {
+  const { force = false, dryRun = false, exclude = new Set() } = options
+  const root = _rootSrc ?? srcDir
   const entries = readdirSync(srcDir)
   for (const entry of entries) {
     const srcPath = join(srcDir, entry)
     const destPath = join(destDir, entry)
+    const relPath = srcPath.slice(root.length + 1).replace(/\\/g, '/')
+    if (exclude.has(relPath)) {
+      fileSkipped(destPath, 'not applicable for this stack')
+      continue
+    }
     const stat = statSync(srcPath)
     if (stat.isDirectory()) {
       if (!dryRun) ensureDir(destPath)
-      copyDir(srcPath, destPath, options)
+      copyDir(srcPath, destPath, options, root)
     } else {
       if (existsSync(destPath) && !force) {
         fileExists(destPath)

@@ -33,6 +33,9 @@ agents:
   designer: false
   cost_engineer: false
 
+design_system:
+  tokens: css-only
+
 forbidden_patterns:
   - "import \\*"
   - "except Exception:\\s*pass"

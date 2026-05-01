@@ -1,16 +1,14 @@
-# 🐙 Octechpus 2.0
+# 🐙 Octechpus 2.2
 
 Multi-stack agent orchestrator for Claude Code projects.
 
 ---
 
-## What's new in 2.0
+## What's new in 2.2
 
-- **Stack profiles** — declarative YAML configuration per language/framework; agents, rules and prompts adapt automatically
-- **Profiler agent** — auto-detects your stack from `package.json`, `pyproject.toml`, `go.mod`, etc.
-- **Cost Engineer agent** — protects against runaway costs in AI/ML projects (activated in `python-ai-pipeline`)
-- **ADR-first architecture** — decisions of medium/high impact require an ADR before any implementation
-- **Customizations preserved across updates** — `octechpus update` compares file hashes and skips files you edited
+- **All 12 agents always installed** — every `octechpus init` creates the full command set; no more profile-gated omissions
+- **Design system always scaffolded** — `design-system/` is installed on every project; token files are filtered by stack
+- **Stack-aware design tokens** — `design_system.tokens` profile key controls what gets copied: `tailwind` (preset + CSS), `css-only` (CSS variables), or `none` (tokens skipped for pure backend/CLI stacks)
 
 ---
 
@@ -87,8 +85,10 @@ _base.yaml
 When you run `octechpus init`, the resolved profile (parent + child merged) is used to:
 
 1. Render each template in `.claude/commands/` — placeholders like `{{language}}` and `{{testing.framework}}` are replaced with the profile's values
-2. Filter which agents are installed — if `agents.cost_engineer: false`, `cost-engineer.md` is not created
+2. Control which design tokens are installed via `design_system.tokens` (`tailwind` / `css-only` / `none`)
 3. Write the `Stack Profile` section in `CLAUDE.md` so Claude Code knows the stack
+
+All 12 agent commands are installed on every project regardless of profile.
 
 ### Customizations are preserved on update
 
@@ -99,9 +99,9 @@ When you run `octechpus init`, the resolved profile (parent + child merged) is u
 ## The 12 agents
 
 ```
-Maestro → GitHub → Architect → 🎨 Designer (UI only) → Coder → Reviewer → QA → Security → Docs → Reporter
-                                       ↑ runs before Coder                               🔬 Profiler (on init)
-                                                                                          💰 Cost Engineer (AI/ML only)
+Maestro → GitHub → Architect → 🎨 Designer → Coder → Reviewer → QA → Security → Docs → Reporter
+                                       ↑ runs before Coder on UI tasks
+                                                                          🔬 Profiler  💰 Cost Engineer
 ```
 
 | # | Agent | Function |
@@ -109,7 +109,7 @@ Maestro → GitHub → Architect → 🎨 Designer (UI only) → Coder → Revie
 | 1 | 🎯 Maestro | Orchestrates the pipeline, classifies demand (UI / Backend / Mixed), routes to Designer when needed |
 | 2 | 🐙 GitHub | Issues, branch naming, semantic commits, PRs |
 | 3 | 📐 Architect | Technical impact analysis, ADR authoring |
-| 4 | 🎨 Designer | Design system guardian — produces technical briefing for UI tasks (activated by `nextjs-react`) |
+| 4 | 🎨 Designer | Design system guardian — produces technical briefing for UI tasks |
 | 5 | 💻 Coder | Implementation, following the stack profile rules |
 | 6 | 🔍 Reviewer | Code review with severity levels + design system checklist on UI PRs |
 | 7 | 🧪 QA | Unit, integration and E2E tests |
@@ -117,7 +117,7 @@ Maestro → GitHub → Architect → 🎨 Designer (UI only) → Coder → Revie
 | 9 | 📚 Docs | JSDoc, README, CHANGELOG, ADRs |
 | 10 | 📊 Reporter | Final pipeline report with metrics |
 | 11 | 🔬 Profiler | Auto-detects stack on `init`; run `/profiler` anytime to re-check |
-| 12 | 💰 Cost Engineer | Guards against runaway API spend in AI/ML projects (activated by `python-ai-pipeline`) |
+| 12 | 💰 Cost Engineer | Guards against runaway API spend — especially useful in AI/ML projects |
 
 ---
 
@@ -138,7 +138,8 @@ After `init`, open Claude Code in the project and use:
 | `/docs [scope]` | Documentation |
 | `/github-issue [demand]` | Create GitHub issue |
 | `/profiler` | Re-detect and report the current stack |
-| `/design [demand]` | Design system briefing for UI (requires `nextjs-react` profile) |
+| `/design [demand]` | Design system briefing for UI tasks |
+| `/cost [scope]` | Cost audit — API spend, infra, dependencies |
 
 ### CLI commands
 
@@ -152,7 +153,7 @@ octechpus profile list                  List available stack profiles
 octechpus profile show <name>           Show resolved profile (after inheritance)
 octechpus profile current               Show active profile of current project
 octechpus profile switch <name>         Switch project to a different profile
-octechpus design-system add             Add design system (nextjs-react only)
+octechpus design-system add             Add/re-add design system to project
 octechpus design-system update          Sync design-system/ with latest templates
 octechpus help                          Show help
 ```
@@ -174,7 +175,7 @@ octechpus help                          Show help
 
 ```
 your-project/
-├── .claude/commands/              ← Agent slash commands (filtered by profile)
+├── .claude/commands/              ← All 12 agent slash commands (always installed)
 │   ├── pipeline.md                   /pipeline
 │   ├── audit.md                      /audit
 │   ├── architect.md                  /architect
@@ -185,8 +186,15 @@ your-project/
 │   ├── docs.md                       /docs
 │   ├── github-issue.md               /github-issue
 │   ├── profiler.md                   /profiler
-│   ├── cost-engineer.md              /cost-engineer  (python-ai-pipeline only)
-│   └── design.md                     /design         (nextjs-react only)
+│   ├── cost-engineer.md              /cost
+│   └── design.md                     /design
+├── design-system/                 ← Design system (always installed)
+│   ├── docs/                         8 design docs (principles → accessibility)
+│   ├── templates/
+│   ├── tokens/tokens.css             CSS variables  (frontend stacks)
+│   ├── tokens/tailwind.preset.js     Tailwind preset (nextjs-react only)
+│   ├── CLAUDE.md
+│   └── README.md
 ├── .github/
 │   ├── ISSUE_TEMPLATE/
 │   └── PULL_REQUEST_TEMPLATE.md

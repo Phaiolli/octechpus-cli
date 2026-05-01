@@ -18,7 +18,7 @@ const __dirname = dirname(__filename)
 // CONFIG
 // ═══════════════════════════════════════════════════════════
 
-const VERSION = '2.1.0'
+const VERSION = '2.2.0'
 const TEMPLATES_DIR = join(__dirname, 'templates')
 const DESIGN_SYSTEM_TEMPLATES_DIR = join(TEMPLATES_DIR, 'design-system')
 const MANIFEST_PATH = '.octechpus/manifest.json'
@@ -120,11 +120,20 @@ function getCurrentProfile(projectDir) {
   return null
 }
 
-function getActiveCommands(profile, includeDesign = false) {
-  const cmds = ['pipeline', 'audit', 'architect', 'coder', 'review', 'qa', 'security', 'docs', 'github-issue', 'profiler']
-  if (profile?.agents?.designer || includeDesign) cmds.push('design')
-  if (profile?.agents?.cost_engineer) cmds.push('cost-engineer')
-  return cmds
+function getActiveCommands() {
+  return ['pipeline', 'audit', 'architect', 'coder', 'review', 'qa', 'security', 'docs', 'github-issue', 'profiler', 'design', 'cost-engineer']
+}
+
+function getDesignSystemExcludes(profile) {
+  const tokensMode = profile?.design_system?.tokens ?? 'none'
+  const exclude = new Set()
+  if (tokensMode === 'none') {
+    exclude.add('tokens/tailwind.preset.js')
+    exclude.add('tokens/tokens.css')
+  } else if (tokensMode === 'css-only') {
+    exclude.add('tokens/tailwind.preset.js')
+  }
+  return exclude
 }
 
 async function selectProfile(projectDir, stackFlag, { askFn = ask } = {}) {
@@ -241,7 +250,7 @@ async function commandInit(targetDir, options = {}) {
   // ─────────────────────────────────────────────
   console.log(bold('  Agent Commands (.claude/commands/)'))
 
-  const commands = getActiveCommands(profile, withDesignSystem)
+  const commands = getActiveCommands()
 
   for (const cmd of commands) {
     const filepath = join(projectDir, '.claude', 'commands', `${cmd}.md`)
@@ -359,13 +368,12 @@ async function commandInit(targetDir, options = {}) {
     console.log('')
   }
 
-  if (withDesignSystem || profile.agents?.designer) {
-    console.log(bold('  Design System (design-system/)'))
-    const destDesignSystem = join(projectDir, 'design-system')
-    copyDir(DESIGN_SYSTEM_TEMPLATES_DIR, destDesignSystem, { force, dryRun })
-    created++
-    console.log('')
-  }
+  console.log(bold('  Design System (design-system/)'))
+  const destDesignSystem = join(projectDir, 'design-system')
+  const dsExcludes = getDesignSystemExcludes(profile)
+  copyDir(DESIGN_SYSTEM_TEMPLATES_DIR, destDesignSystem, { force, dryRun, exclude: dsExcludes })
+  created++
+  console.log('')
 
   // ─────────────────────────────────────────────
   // Manifest
@@ -401,12 +409,8 @@ async function commandInit(targetDir, options = {}) {
   console.log(`    ${c('green', '/qa')}           — Create tests`)
   console.log(`    ${c('green', '/architect')}    — Architecture analysis`)
   console.log(`    ${c('green', '/docs')}         — Documentation`)
-  if (profile.agents?.designer) {
-    console.log(`    ${c('green', '/design')}       — Design system briefing`)
-  }
-  if (profile.agents?.cost_engineer) {
-    console.log(`    ${c('green', '/cost')}         — Cost audit`)
-  }
+  console.log(`    ${c('green', '/design')}       — Design system briefing`)
+  console.log(`    ${c('green', '/cost')}         — Cost audit`)
   console.log('')
   console.log(`  ${c('dim', 'Run')} ${c('cyan', 'npx octechpus status')} ${c('dim', 'to verify setup')}`)
   console.log('')
@@ -595,15 +599,7 @@ async function commandUpdate(targetDir, options = {}) {
   }
   console.log('')
 
-  const commands = profile
-    ? getActiveCommands(profile, existsSync(join(commandsDir, 'design.md')))
-    : ['pipeline', 'audit', 'architect', 'coder', 'review', 'qa', 'security', 'docs', 'github-issue', 'profiler']
-
-  if (!profile || !profile.agents?.cost_engineer) {
-    if (existsSync(join(commandsDir, 'cost-engineer.md')) && !commands.includes('cost-engineer')) {
-      commands.push('cost-engineer')
-    }
-  }
+  const commands = getActiveCommands()
 
   let updated = 0
   let skippedCount = 0
@@ -745,7 +741,7 @@ async function commandProfile(subcommand, profileArg, targetDir) {
       console.log('')
 
       const manifest = readManifest(projectDir) || { files: {} }
-      const commands = getActiveCommands(newProfile, false)
+      const commands = getActiveCommands()
       let switched = 0
 
       console.log(bold('  Updating agent commands...'))
@@ -755,15 +751,6 @@ async function commandProfile(subcommand, profileArg, targetDir) {
         writeFile(filepath, content, { force: true })
         manifest.files[`.claude/commands/${cmd}.md`] = computeHash(content)
         switched++
-      }
-
-      // Remove commands that aren't active in the new profile
-      const activeSet = new Set(commands)
-      const optionalCmds = ['design', 'cost-engineer']
-      for (const opt of optionalCmds) {
-        if (!activeSet.has(opt)) {
-          // Don't delete — just don't update. User can remove manually.
-        }
       }
 
       const claudeMdPath = join(projectDir, 'CLAUDE.md')
@@ -818,7 +805,7 @@ async function commandDesignSystem(subcommand, targetDir, options = {}) {
     console.log('')
 
     console.log(bold('  Design System Files (design-system/)'))
-    copyDir(DESIGN_SYSTEM_TEMPLATES_DIR, destDesignSystem, { force, dryRun })
+    copyDir(DESIGN_SYSTEM_TEMPLATES_DIR, destDesignSystem, { force, dryRun, exclude: getDesignSystemExcludes(profile) })
     console.log('')
 
     console.log(c('cyan', '  ═══════════════════════════════════════════════'))
@@ -851,7 +838,7 @@ async function commandDesignSystem(subcommand, targetDir, options = {}) {
           return
         }
       }
-      copyDir(DESIGN_SYSTEM_TEMPLATES_DIR, destDesignSystem, { force: true, dryRun })
+      copyDir(DESIGN_SYSTEM_TEMPLATES_DIR, destDesignSystem, { force: true, dryRun, exclude: getDesignSystemExcludes(profile) })
     } else {
       console.log(`  ${c('yellow', '⚠')} design-system/ not found. Run ${c('cyan', 'npx octechpus design-system add')} first.`)
     }
