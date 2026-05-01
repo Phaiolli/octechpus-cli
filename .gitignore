@@ -3,3 +3,5 @@ node_modules/
 *.log
 *.tgz
 setup-npm-auth.sh
+.env
+*.env
