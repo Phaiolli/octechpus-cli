@@ -1,4 +1,4 @@
-# 🐙 Octechpus — Agent Orchestrator Reference (v2.0)
+# 🐙 Octechpus — Agent Orchestrator Reference (v2.1)
 
 ## Visão Geral
 
@@ -122,17 +122,7 @@ Analisa vulnerabilidades (OWASP Top 10), validação de inputs, autenticação/a
 
 ---
 
-### 9. 💰 COST ENGINEER — Engenheiro de Custo
-
-*Ativo apenas em stacks com `agents.cost_engineer = true` (ex: `python-ai-pipeline`).*
-
-Protege o projeto contra bugs caros em APIs pagas: loops de chamadas, retries sem limite, ausência de cache/dedup.
-
-**Prompt detalhado:** `.claude/commands/cost-engineer.md`
-
----
-
-### 10. 📚 DOCS — Documentador
+### 9. 📚 DOCS — Documentador
 
 Documenta código no formato da stack ativa, atualiza README/CHANGELOG e cria ADRs quando necessário.
 
@@ -140,15 +130,29 @@ Documenta código no formato da stack ativa, atualiza README/CHANGELOG e cria AD
 
 ---
 
-### 11. 🐙 GITHUB (Fase 2) — PR e Commits
+### 10. 📊 REPORTER — Consolidador Final
 
-Prepara commits semânticos e abre o PR final com relatório consolidado de todos os agentes.
+Gera o relatório final com métricas do pipeline, decisões técnicas, débitos identificados e próximos passos. Inclui o relatório completo no PR description.
+
+**Prompt:** implícito no `/pipeline` e `/audit`
 
 ---
 
-### 12. 📊 REPORTER — Consolidador Final
+### 11. 🔬 PROFILER — Detector de Stack
 
-Gera o relatório final com métricas do pipeline, decisões técnicas, débitos identificados e próximos passos.
+Auto-detecta a stack do projeto na instalação (`octechpus init`) e pode ser invocado a qualquer momento para verificar drift entre o profile declarado e a stack real.
+
+**Prompt detalhado:** `.claude/commands/profiler.md`
+
+---
+
+### 12. 💰 COST ENGINEER — Engenheiro de Custo
+
+*Ativo apenas em stacks com `agents.cost_engineer = true` (ex: `python-ai-pipeline`).*
+
+Protege o projeto contra bugs caros em APIs pagas: loops de chamadas, retries sem limite, ausência de cache/dedup. Roda após Security, antes de Docs.
+
+**Prompt detalhado:** `.claude/commands/cost-engineer.md`
 
 ---
 
@@ -223,10 +227,11 @@ DESENVOLVEDOR
 | `/pipeline [demanda]` | Todos | Pipeline completo |
 | `/audit [escopo?]` | Todos (modo audit) | Raio-x do projeto |
 | `/architect [escopo]` | Architect | Análise arquitetural |
+| `/design [demanda]` | Designer | Briefing UI (stacks com `agents.designer = true`) |
 | `/review [escopo]` | Reviewer | Code review |
 | `/qa [escopo]` | QA | Criar testes |
 | `/security [escopo]` | Security | Audit de segurança |
 | `/docs [escopo]` | Docs | Documentação |
 | `/github-issue [demanda]` | GitHub | Issue + branch |
-| `/design [demanda]` | Designer | Briefing UI (stacks com designer) |
-| `/cost [escopo]` | Cost Engineer | Audit de custo (stacks com cost_engineer) |
+| `/profiler` | Profiler | Re-detectar stack e verificar drift |
+| `/cost [escopo]` | Cost Engineer | Audit de custo (stacks com `agents.cost_engineer = true`) |

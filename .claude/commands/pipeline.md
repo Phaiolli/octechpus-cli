@@ -10,6 +10,10 @@ Execute o pipeline completo de agentes para a seguinte demanda:
 
 Identifique o tipo da demanda e selecione o pipeline correto:
 
+### UI / Frontend
+**Sinais:** "tela", "página", "componente", "layout", "form", "tabela", "card", "modal", "sidebar", "topbar", "responsivo", "design", "interface", "estilo"; arquivos em `src/components/`, `src/app/**/page.*`, `src/features/**/components/`
+
+**Pipeline:** GitHub → Architect → **Designer** → Coder → Reviewer → QA → Security → Docs → Reporter
 
 ### Backend / Server
 **Sinais:** "API", "endpoint", "service", "repository", "schema", "migration", "job", "queue"
@@ -20,6 +24,10 @@ Identifique o tipo da demanda e selecione o pipeline correto:
 
 **Pipeline:** GitHub → Architect → Coder → Reviewer → QA → Docs → Reporter
 
+### Provider Integration *(stacks com Cost Engineer ativo)*
+**Sinais:** integração com API externa paga, configuração de provider, retry policies
+
+**Pipeline:** GitHub → Architect → Coder → Reviewer → Cost Engineer → Security → QA → Docs → Reporter
 
 ### Prompt Update (projetos AI/ML)
 **Sinais:** modificação em `profiles/**/prompts/**`, label `prompt-update`
@@ -41,15 +49,19 @@ Execute TODOS os agentes aplicáveis na ordem especificada. Para cada agente, as
 
 **3. 📐 ARCHITECT** — Analise impacto arquitetural, valide padrões, proponha estrutura de implementação. Decida: approved / needs_changes / rejected.
 
-**5. 💻 CODER** — Implemente seguindo estritamente o plano do ARCHITECT. Código tipado, limpo, com error handling.
+**4. 🎨 DESIGNER** *(somente em demandas de UI — stacks com `agents.designer = true`)* — Leia o design system em `./design-system/` e produza briefing técnico para o Coder. Inclui: layout, componentes shadcn, tokens, estados, responsividade e checklist para o Reviewer.
 
-**6. 🔍 REVIEWER** — Code review completo. Classifique issues como 🔴 BLOCKER / 🟡 WARNING / 🔵 SUGGESTION. Se houver blockers, corrija antes de prosseguir.
+**5. 💻 CODER** — Implemente seguindo estritamente o plano do ARCHITECT e (quando aplicável) o briefing do DESIGNER. Código tipado, limpo, com error handling.
 
-**7. 🧪 QA** — Crie testes usando vitest. Garanta cobertura de happy paths, error paths e edge cases. Target: 80%.
+**6. 🔍 REVIEWER** — Code review completo. Classifique issues como 🔴 BLOCKER / 🟡 WARNING / 🔵 SUGGESTION. Em PRs de UI, aplique também a checklist do design system. Se houver blockers, corrija antes de prosseguir.
+
+**7. 🧪 QA** — Crie testes usando o framework da stack ativa. Garanta cobertura de happy paths, error paths e edge cases. Target: 80%.
 
 **8. 🛡️ SECURITY** — Audit de segurança: XSS, injection, CSRF, IDOR, dados sensíveis, validação de inputs. Classifique por severidade.
 
-**10. 📚 DOCS** — Documente no formato tsdoc: exports públicos, README/CHANGELOG, ADRs se necessário.
+**9. 💰 COST ENGINEER** *(somente em stacks com `agents.cost_engineer = true`)* — Audit de custo: chamadas a APIs pagas, retries, loops, estimativa de custo da feature.
+
+**10. 📚 DOCS** — Documente no formato da stack ativa: exports públicos, README/CHANGELOG, ADRs se necessário.
 
 **11. 🐙 GITHUB (Fase 2)** — Commits semânticos (Conventional Commits), PR com template completo incluindo relatório de todos os agentes. Use `gh` CLI.
 
@@ -64,11 +76,13 @@ Execute TODOS os agentes aplicáveis na ordem especificada. Para cada agente, as
 | 1 | 🎯 Maestro | Orquestra, classifica e roteia |
 | 2 | 🐙 GitHub | Issues, branches, commits, PRs |
 | 3 | 📐 Architect | Impacto e planejamento técnico |
+| 4 | 🎨 Designer | Guardião do design system — briefing técnico para UI *(nextjs-react)* |
 | 5 | 💻 Coder | Implementação |
 | 6 | 🔍 Reviewer | Code review + checklist de stack |
-| 7 | 🧪 QA | Testes (vitest) |
+| 7 | 🧪 QA | Testes (framework da stack) |
 | 8 | 🛡️ Security | OWASP Top 10 + vulnerabilidades |
-| 10 | 📚 Docs | tsdoc, README, CHANGELOG, ADRs |
+| 9 | 💰 Cost Engineer | Audit de custo operacional *(python-ai-pipeline)* |
+| 10 | 📚 Docs | Docs da stack, README, CHANGELOG, ADRs |
 | 11 | 🐙 GitHub | Commits semânticos e PR final |
 | 12 | 📊 Reporter | Relatório final com métricas |
 

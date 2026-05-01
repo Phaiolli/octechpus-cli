@@ -26,16 +26,20 @@
 | `/pipeline [demanda]` | Pipeline completo — todos os agentes em sequência |
 | `/audit [escopo?]` | Raio-x completo do projeto ou módulo |
 | `/architect [escopo]` | Análise arquitetural |
+| `/design [demanda]` | Briefing de design system — stacks com `agents.designer = true` |
 | `/review [escopo]` | Code review |
 | `/qa [escopo]` | Criar testes |
 | `/security [escopo]` | Audit de segurança |
 | `/docs [escopo]` | Documentação |
 | `/github-issue [demanda]` | Gestão GitHub |
+| `/profiler` | Re-detectar stack e verificar drift de profile |
+| `/cost [escopo]` | Audit de custo operacional — stacks com `agents.cost_engineer = true` |
 
 ## Pipeline
 
 ```
-Maestro → GitHub → Architect → Coder → Reviewer → QA → Security → Docs → GitHub (PR) → Reporter
+Maestro → GitHub → Architect → [Designer*] → Coder → Reviewer → QA → Security → [Cost Engineer*] → Docs → GitHub (PR) → Reporter
+* Designer: ativo em nextjs-react  |  * Cost Engineer: ativo em python-ai-pipeline
 ```
 
 ## Regras universais

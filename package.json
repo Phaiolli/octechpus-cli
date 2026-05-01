@@ -1,6 +1,6 @@
 {
   "name": "octechpus",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "🐙 Octechpus — Agent Orchestrator CLI for Claude Code projects",
   "bin": {
     "octechpus": "./src/cli.mjs"
