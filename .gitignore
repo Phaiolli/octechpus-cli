@@ -5,3 +5,5 @@ node_modules/
 setup-npm-auth.sh
 .env
 *.env
+create-automation-token.sh
+setup-npm-automation-token.sh
