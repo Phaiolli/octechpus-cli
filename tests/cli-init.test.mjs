@@ -58,7 +58,7 @@ describe('init --stack=python-fastapi', () => {
     expect(existsSync(manifestPath)).toBe(true)
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
     expect(manifest.profile).toBe('python-fastapi')
-    expect(manifest.version).toBe('2.0.0')
+    expect(manifest.version).toBe('2.1.0')
   })
 
   it('creates .claude/commands/ with core command files', () => {

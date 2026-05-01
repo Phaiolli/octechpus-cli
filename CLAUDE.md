@@ -7,15 +7,23 @@
 
 ## Stack Profile
 
-- **Profile:** node-typescript
-- **Linguagem:** typescript
+- **Profile:** node-typescript *(base de herança — ver nota abaixo)*
+- **Linguagem:** JavaScript (ESM — arquivos `.mjs`)
 - **Runtime:** node>=18
 - **Package Manager:** npm
 - **Test Framework:** vitest
-- **Validation:** zod
-- **Docs Format:** tsdoc
-- **Linter/Formatter:** prettier
-- **Type Checker:** tsc_strict
+- **Validation:** nativa (sem biblioteca externa — CLI valida seus próprios args)
+- **Docs Format:** JSDoc (sem TypeScript, portanto sem TSDoc)
+- **Linter/Formatter:** nenhum configurado
+- **Type Checker:** nenhum (sem tsconfig.json)
+
+> ⚠️ **NOTA IMPORTANTE — leia antes de qualquer mudança:**
+> Este projeto usa o profile `node-typescript` como base de herança, mas a
+> implementação real é **JavaScript ESM puro** (`.mjs`), não TypeScript.
+> Não existe `tsconfig.json`, `prettier`, `zod` nem `tsc` neste repositório.
+> O profile `node-typescript` define regras para projetos *gerados* por este
+> CLI — não para o próprio CLI. Agentes devem avaliar o código como JavaScript,
+> não como TypeScript.
 
 ---
 
@@ -75,66 +83,52 @@ Exemplo: `feature/42-new-endpoint`, `bugfix/55-validation`, `refactor/78-cleanup
 
 ### Testes
 
-- Vitest unit tests for 100% of new public functions
-- Testing Library for React component tests (user interactions, not implementation)
-- MSW for mocking HTTP in integration tests
-- Playwright for critical E2E flows
-- Coverage threshold: 80% lines/branches
+- Vitest para testes unitários e de integração
+- Fixtures em `tests/fixtures/` para simular projetos reais
+- Coverage target: **80%**
 
-
-Coverage target: **80%**
+> ⚠️ **NÃO usar:** Testing Library, MSW, Playwright — não estão instalados.
+> Este é um CLI Node.js, não uma aplicação web.
 
 ### Validação
 
-Usar **zod** em todas as entradas externas.
+Validação nativa via `if`/`throw` e js-yaml (única dependência externa). Sem Zod.
 
 ### Documentação
 
-- Formato: **tsdoc**
+- Formato: **JSDoc** (não TSDoc — o projeto é JavaScript, não TypeScript)
 - README.md e CHANGELOG.md atualizados a cada mudança
 - ADRs em `docs/adr/` para decisões de impacto medium/high
 
-- API docs (openapi) atualizadas para endpoints novos/modificados
-
 ### Convenções
 
-- Imports: absolute_with_aliases
-- Naming: camelCase_functions_PascalCase_classes
+- Imports: relativos com extensão `.mjs` explícita
+- Naming: camelCase para funções, UPPER_CASE para constantes de módulo
 
 ### Padrões PROIBIDOS
 
 Os seguintes padrões NÃO devem aparecer no código deste projeto:
 
+- `: any` / `as any` / `// @ts-ignore` — sem TypeScript, mas evitar cast implícito em JSDoc
+- `JSON\.parse\([^)]+\)(?!.*catch)` — parse sem try/catch
+- `eval(` — sem eval
 
-- `console\.log\(`
-
-- `: any`
-
-- `as any`
-
-- `// @ts-ignore`
-
-- `<div onClick`
-
-- `JSON\.parse\([^)]+\)(?!.*catch)`
-
-
-Reviewer rejeita PRs que contenham qualquer um deles automaticamente.
-
+> ⚠️ **`console.log` NÃO é proibido neste projeto.** Este é um CLI que usa
+> `console.log` como mecanismo de output para o usuário (~200 usos legítimos).
+> A regra de proibir `console.log` vem do profile `node-typescript` e se aplica
+> aos projetos *gerados* por este CLI, não ao CLI em si.
 
 ### Pastas com Guardrail (read-only sem aprovação)
 
-Os seguintes paths são protegidos — modificá-los exige label específico no PR:
-
-
-
+- `src/profiles/` — mudanças exigem label `profiles` no PR
+- `src/templates/` — mudanças exigem label `templates` no PR
 
 ## Segurança
 
 - OWASP Top 10 checklist obrigatório
 - Secrets nunca hardcoded
-- Rate limiting em endpoints públicos
-- Input validation com **zod** em TODAS as entradas
+- `.env` no `.gitignore` — nunca commitado
+- Sem dependências desnecessárias (manter minimal: apenas `js-yaml`)
 
 ## Referência dos Agentes
 
@@ -144,5 +138,49 @@ Consulte `docs/OCTECHPUS_AGENTS.md` para prompts detalhados de cada agente.
 
 ## 📋 PROJECT DOCUMENTATION
 
-> Adicione aqui a documentação específica do seu projeto:
-> stack tecnológico, estrutura de pastas, arquitetura, endpoints, schemas, etc.
+### O que é este projeto
+
+CLI instalável (`npx octechpus` / `npm i -g octechpus`) que scaffolda o
+sistema Octechpus de agentes em projetos terceiros. Não é uma aplicação web,
+não tem API, não tem frontend.
+
+### Stack real
+
+| Item | Realidade |
+|------|-----------|
+| Linguagem | JavaScript ESM (`.mjs`) — sem TypeScript |
+| Única dep de produção | `js-yaml` (parse de profiles YAML) |
+| Única dep de dev | `vitest` (testes) |
+| Configurações ausentes | tsconfig, prettier, eslint, zod |
+| Output do CLI | `console.log` / `console.error` — legítimo e intencional |
+
+### Estrutura de pastas
+
+```
+src/
+  cli.mjs              — entrada principal (~940 linhas, todos os comandos)
+  lib/
+    file-ops.mjs       — I/O de arquivos
+    profile-loader.mjs — carrega e resolve herança de profiles YAML
+    prompts.mjs        — cores e formatação CLI
+    stack-detector.mjs — auto-detecção de stack
+    template-renderer.mjs — engine de templates {{var}}, {{#if}}, {{#each}}
+  profiles/            — profiles YAML (node-typescript, nextjs-react, etc.)
+  templates/           — templates de comandos, design-system, github, docs
+tests/
+  *.test.mjs           — 85 testes Vitest
+  fixtures/            — projetos mínimos para testar auto-detecção
+```
+
+### Versão
+
+`VERSION` em `src/cli.mjs` deve sempre bater com `version` em `package.json`.
+Ao bumpar versão, atualizar ambos + `CHANGELOG.md`.
+
+### Erros recorrentes a evitar
+
+1. **Proibir console.log neste projeto** — não faz sentido, é um CLI
+2. **Pedir TypeScript/tsconfig** — o projeto é JavaScript ESM deliberadamente
+3. **Pedir zod/prettier/tsc** — não estão instalados e não devem ser exigidos
+4. **Citar Testing Library/MSW/Playwright** — não instalados, só Vitest
+5. **VERSION no cli.mjs desatualizado** — sempre manter em sync com package.json
