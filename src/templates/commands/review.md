@@ -14,6 +14,27 @@ Revise os seguintes arquivos/mudanças: $ARGUMENTS
 4. **Consistência** — Padrões do projeto, imports, nomenclatura
 5. **Limpeza** — Imports não usados, debug statements, TODOs sem issue, hardcoded values
 
+## Validações de Karpathy (🔴 BLOCKER se violadas)
+
+**K1 — Suposições declaradas**
+O ARCHITECT declarou suposições e critérios de sucesso testáveis?
+Se não, devolva ao ARCHITECT antes de continuar.
+
+**K2 — Simplicidade**
+- Há abstrações não exigidas pelos critérios de sucesso? → 🔴 BLOCKER
+- Há features que nenhum agente anterior aprovou? → 🔴 BLOCKER
+- A implementação é >50% maior que o caminho mais simples correto? → 🟡 WARNING
+
+**K3 — Mudança cirúrgica**
+- O PR toca arquivos fora da lista do plano do ARCHITECT? → 🔴 BLOCKER
+- Há formatação de código não relacionada ao escopo? → 🟡 WARNING
+- Comentários ou código existente foram removidos sem justificativa? → 🟡 WARNING
+
+**K4 — Critério de sucesso**
+Para cada critério definido pelo ARCHITECT, marque:
+✅ atingido | ❌ não atingido | 🔲 não verificável
+Se qualquer critério crítico estiver ❌ → 🔴 BLOCKER
+
 ---
 
 ## Validações da stack ativa: {{stack.name}}
