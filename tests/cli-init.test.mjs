@@ -7,6 +7,7 @@ import { tmpdir } from 'os'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const CLI = join(__dirname, '..', 'src', 'cli.mjs')
+const PKG_VERSION = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8')).version
 
 function runCLI(args, { input = '', cwd } = {}) {
   return spawnSync('node', [CLI, ...args], {
@@ -58,7 +59,7 @@ describe('init --stack=python-fastapi', () => {
     expect(existsSync(manifestPath)).toBe(true)
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
     expect(manifest.profile).toBe('python-fastapi')
-    expect(manifest.version).toBe('2.2.0')
+    expect(manifest.version).toBe(PKG_VERSION)
   })
 
   it('creates .claude/commands/ with core command files', () => {
