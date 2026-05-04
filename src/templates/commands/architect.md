@@ -6,6 +6,29 @@ Analise: $ARGUMENTS
 
 ---
 
+## Antes de qualquer análise — Pensar primeiro
+
+Execute obrigatoriamente antes de propor qualquer solução:
+
+**1. Declare suas suposições**
+Liste tudo que está assumindo sobre a demanda. Se houver ambiguidade (dois
+caminhos possíveis, escopo impreciso, dependência desconhecida), declare
+explicitamente e apresente as alternativas antes de escolher.
+
+**2. Defina critérios de sucesso testáveis**
+Converta a demanda em resultados verificáveis:
+- ❌ "adicionar autenticação"
+- ✅ "endpoint `POST /auth/login` retorna 200 + JWT em <200ms; retorna 401
+  para credenciais inválidas; rate limit de 5 req/min por IP"
+
+Não aprove implementação sem critérios de sucesso claros.
+
+**3. Avalie o caminho mais simples primeiro**
+Liste a solução mais simples possível antes de propor a ideal. Só adicione
+complexidade se houver razão técnica documentada.
+
+---
+
 ## Política de ADR (Architecture Decision Records)
 
 Para mudanças com impacto **medium** ou **high**, você DEVE produzir um ADR ANTES de aprovar a implementação. O ADR vai em `docs/adr/NNN-titulo.md`:

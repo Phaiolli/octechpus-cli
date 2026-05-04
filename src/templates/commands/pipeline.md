@@ -45,7 +45,24 @@ Identifique o tipo da demanda e selecione o pipeline correto:
 
 Execute TODOS os agentes aplicáveis na ordem especificada. Para cada agente, assuma o papel descrito, execute a análise/ação e produza o output no formato definido. Só passe ao próximo após concluir o atual.
 
-**1. 🎯 MAESTRO** — Classifique a demanda (tipo, severidade) e selecione o pipeline de acordo com as regras acima.
+**1. 🎯 MAESTRO** — Execute em ordem:
+
+a) **Classifique** a demanda (tipo, severidade) conforme as regras acima.
+
+b) **Converta em critérios de sucesso testáveis** — Reescreva a demanda como
+   resultados verificáveis antes de passar ao próximo agente. Exemplos:
+   - "corrija o bug de login" → "usuário com credenciais válidas recebe JWT;
+     credenciais inválidas retornam 401; teste existente X passa"
+   - "melhore a performance da listagem" → "GET /items responde em <100ms
+     para 10k registros medido com k6"
+   - "adicione campo CPF" → "campo persiste no banco, retorna na API, valida
+     formato 000.000.000-00, teste unitário passa"
+
+c) **Liste suposições** — Se houver ambiguidade de alto risco, pergunte antes
+   de rotear.
+
+d) **Selecione o pipeline** e passe os critérios de sucesso como contexto para
+   todos os agentes subsequentes.
 
 **2. 🐙 GITHUB (Fase 1)** — Crie a issue com template padrão, defina branch name e labels. Use `gh` CLI.
 

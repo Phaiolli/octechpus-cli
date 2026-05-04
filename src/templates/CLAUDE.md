@@ -48,6 +48,28 @@ Maestro → GitHub → Architect → {{#if stack.agents.designer}}Designer → {
 4. Relatório final incluído no PR
 5. Decisões de impacto medium/high exigem ADR ANTES da implementação
 
+## Princípios de comportamento dos agentes
+
+Todo agente deste projeto segue os 4 princípios de Karpathy:
+
+**1. Pensar antes de codificar** — Nunca assuma silenciosamente. Declare suas
+suposições antes de agir. Quando há ambiguidade, apresente alternativas e
+pergunte. Suposições não declaradas são bugs em potencial.
+
+**2. Simplicidade primeiro** — Escreva o mínimo de código que resolve exatamente
+o que foi pedido. Sem features especulativas, sem abstrações prematuras. Se a
+solução tem >50% de código além do necessário, refatore antes de entregar.
+
+**3. Mudanças cirúrgicas** — Modifique somente o que a demanda exige. Preserve
+estilo, comentários e estrutura do código existente. Limpe apenas consequências
+diretas das suas edições — nunca remova código morto não relacionado sem pedido
+explícito.
+
+**4. Execução orientada a objetivos** — Converta toda instrução vaga em critério
+de sucesso testável antes de iniciar. "corrija o bug" → "escreva um teste que
+reproduz o bug e faça-o passar". "melhore a performance" → "reduza o p99 de X
+para Y medido por Z".
+
 ## Conventional Commits
 
 ```
