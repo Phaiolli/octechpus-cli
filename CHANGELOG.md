@@ -41,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Designer agent** (`/design`) now installed in `.claude/commands/design.md` — previously only rendered for `nextjs-react` projects; now available in all Octechpus repos for development reference
 - **Cost Engineer agent** (`/cost`) now installed in `.claude/commands/cost-engineer.md` — previously only rendered for `python-ai-pipeline`; now available in all repos
-- **CI test job** — `test.yml` workflow runs `npm test` on every push and PR; `publish.yml` now requires tests to pass before publishing to npm (previously CI only published, never tested)
+- **CI test job** — `test.yml` workflow runs `npm test` on every push and PR
 - `docs/OCTECHPUS_AGENTS.md` and `src/templates/docs/OCTECHPUS_AGENTS.md` updated to v2.1: agents reordered to canonical numbering (1-Maestro, 2-GitHub, 3-Architect, 4-Designer, 5-Coder, 6-Reviewer, 7-QA, 8-Security, 9-Docs, 10-Reporter, 11-Profiler, 12-Cost Engineer); Profiler now documented as a named agent (#11)
 - `CLAUDE.md` commands table now lists all 11 slash commands including `/design`, `/profiler`, and `/cost`
 - `pipeline.md` restored to full 12-agent layout with UI/Frontend routing section and conditional Designer + Cost Engineer steps

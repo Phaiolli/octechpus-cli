@@ -177,6 +177,33 @@ tests/
 `VERSION` em `src/cli.mjs` deve sempre bater com `version` em `package.json`.
 Ao bumpar versão, atualizar ambos + `CHANGELOG.md`.
 
+### Como publicar no npm
+
+A publicação é feita **manualmente pelo terminal** — não existe CI de publish.
+O `test.yml` roda os testes em todo push/PR, mas o publish é sempre local.
+
+Passo a passo para uma nova release:
+
+```bash
+# 1. Garantir que está logado no npm
+npm whoami   # deve retornar o usuário correto
+
+# 2. Bumpar a versão nos dois lugares obrigatórios
+#    - package.json  → campo "version"
+#    - src/cli.mjs   → constante VERSION
+
+# 3. Atualizar CHANGELOG.md com a nova versão e data
+
+# 4. Rodar os testes
+npm test
+
+# 5. Commit, push e publicar
+git add package.json src/cli.mjs CHANGELOG.md
+git commit -m "chore(release): bump version to X.Y.Z"
+git push origin main
+npm publish --access public
+```
+
 ### Erros recorrentes a evitar
 
 1. **Proibir console.log neste projeto** — não faz sentido, é um CLI
