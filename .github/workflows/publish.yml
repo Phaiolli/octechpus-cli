@@ -22,6 +22,7 @@ jobs:
     needs: test
     permissions:
       contents: read
+      id-token: write
 
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -53,9 +54,7 @@ jobs:
 
       - name: Publish
         if: steps.version_check.outputs.changed == 'true'
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM }}
+        run: npm publish --provenance --access public
 
       - name: Summary
         if: steps.version_check.outputs.changed == 'true'
