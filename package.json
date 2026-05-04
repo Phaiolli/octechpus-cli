@@ -3,7 +3,7 @@
   "version": "2.3.0",
   "description": "🐙 Octechpus — Agent Orchestrator CLI for Claude Code projects",
   "bin": {
-    "octechpus": "./src/cli.mjs"
+    "octechpus": "src/cli.mjs"
   },
   "type": "module",
   "keywords": [
