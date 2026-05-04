@@ -18,7 +18,7 @@ const __dirname = dirname(__filename)
 // CONFIG
 // ═══════════════════════════════════════════════════════════
 
-const VERSION = '2.2.0'
+const VERSION = '2.3.0'
 const TEMPLATES_DIR = join(__dirname, 'templates')
 const DESIGN_SYSTEM_TEMPLATES_DIR = join(TEMPLATES_DIR, 'design-system')
 const MANIFEST_PATH = '.octechpus/manifest.json'
