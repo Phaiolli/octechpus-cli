@@ -18,7 +18,7 @@ const __dirname = dirname(__filename)
 // CONFIG
 // ═══════════════════════════════════════════════════════════
 
-const VERSION = '2.4.1'
+const VERSION = '2.4.2'
 const TEMPLATES_DIR = join(__dirname, 'templates')
 const DESIGN_SYSTEM_TEMPLATES_DIR = join(TEMPLATES_DIR, 'design-system')
 const MANIFEST_PATH = '.octechpus/manifest.json'
@@ -657,6 +657,32 @@ async function commandUpdate(targetDir, options = {}) {
     updated++
   }
 
+  // CLAUDE.md — re-render as seções gerenciadas pelo Octechpus, preservando a
+  // seção "## 📋 PROJECT DOCUMENTATION" (conteúdo do usuário) intacta.
+  let claudeUpdated = false
+  let claudeSkipped = false
+  const claudeMdPath = join(projectDir, 'CLAUDE.md')
+  const PROJECT_DOC_MARKER = '## 📋 PROJECT DOCUMENTATION'
+  if (profile && existsSync(claudeMdPath)) {
+    const existing = readFileSync(claudeMdPath, 'utf-8')
+    const rendered = loadRenderedTemplate('CLAUDE.md', profile)
+    const exIdx = existing.indexOf(PROJECT_DOC_MARKER)
+    const newIdx = rendered.indexOf(PROJECT_DOC_MARKER)
+    if (exIdx !== -1 && newIdx !== -1) {
+      // managed (template novo até o marcador) + cauda do usuário (a partir do marcador)
+      const merged = rendered.slice(0, newIdx) + existing.slice(exIdx)
+      if (merged !== existing) {
+        writeFile(claudeMdPath, merged, { force: true, dryRun })
+        claudeUpdated = true
+        updated++
+        if (!dryRun) updatedHashes['CLAUDE.md'] = computeHash(merged)
+      }
+    } else {
+      // sem o marcador esperado → não arrisca sobrescrever conteúdo do usuário
+      claudeSkipped = true
+    }
+  }
+
   if (!dryRun && manifest && Object.keys(updatedHashes).length > 0) {
     manifest.version = VERSION
     manifest.updatedAt = new Date().toISOString()
@@ -672,7 +698,11 @@ async function commandUpdate(targetDir, options = {}) {
   if (skippedCount > 0) {
     console.log(`  ${c('yellow', `⊘ Skipped ${skippedCount} customized file(s)`)} ${c('dim', '(use --force to override)')}`)
   }
-  console.log(`  ${c('dim', 'Note: CLAUDE.md was NOT modified. Run profile switch to re-render it.')}`)
+  if (claudeUpdated) {
+    console.log(`  ${c('green', '✓ CLAUDE.md atualizado')} ${c('dim', '(seção PROJECT DOCUMENTATION preservada)')}`)
+  } else if (claudeSkipped) {
+    console.log(`  ${c('yellow', '⊘ CLAUDE.md preservado')} ${c('dim', '(sem marcador PROJECT DOCUMENTATION — rode profile switch para re-renderizar)')}`)
+  }
   console.log('')
 }
 

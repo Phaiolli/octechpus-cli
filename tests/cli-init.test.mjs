@@ -177,6 +177,27 @@ describe('update — customization preservation', () => {
     }
   })
 
+  it('refreshes CLAUDE.md managed sections while preserving user PROJECT DOCUMENTATION', () => {
+    tmpDir = makeTmpDir()
+    runCLI(['init', '--stack=node-typescript'], { cwd: tmpDir })
+
+    const claudePath = join(tmpDir, 'CLAUDE.md')
+    const userDoc = 'Minha doc do projeto: endpoints internos X, Y, Z.'
+    // usuário adiciona conteúdo próprio e simula um CLAUDE.md de versão antiga
+    let s = readFileSync(claudePath, 'utf-8') + '\n\n' + userDoc + '\n'
+    s = s.replace(/## Privacidade[\s\S]*?(?=\n## )/, '')
+    writeFileSync(claudePath, s, 'utf-8')
+    expect(readFileSync(claudePath, 'utf-8')).not.toContain('Privacidade')
+
+    runCLI(['update'], { cwd: tmpDir })
+
+    const after = readFileSync(claudePath, 'utf-8')
+    expect(after).toContain('Privacidade')       // seção gerenciada restaurada
+    expect(after).toContain('/privacy')           // comando novo na tabela
+    expect(after).toContain(userDoc)              // doc do usuário preservada
+    expect(after).not.toContain('{{')             // sem placeholders órfãos
+  })
+
   it('overrides customizations when --force is passed', () => {
     tmpDir = makeTmpDir()
     runCLI(['init', '--stack=node-typescript'], { cwd: tmpDir })

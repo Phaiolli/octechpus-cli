@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.2] - 2026-06-23
+
+### Changed
+- **`octechpus update` agora atualiza o `CLAUDE.md`** — re-renderiza as seções
+  gerenciadas pelo Octechpus (pipeline, comandos, segurança, privacidade, padrões)
+  e **preserva a seção `## 📋 PROJECT DOCUMENTATION`** do usuário. Com isso, `update`
+  passa a ser o comando único que traz um projeto totalmente para a versão nova
+  (não é mais necessário rodar `profile switch` à parte). Se o `CLAUDE.md` não tiver
+  o marcador esperado, ele é preservado e o CLI avisa.
+
 ## [2.4.1] - 2026-06-23
 
 ### Fixed
