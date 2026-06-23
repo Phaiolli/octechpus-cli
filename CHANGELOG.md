@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] - 2026-06-23
+
+### Added
+- **Modelo de permissão — gera `.claude/settings.json`** (ADR 002). O `init`/`update`/
+  `profile switch` agora escrevem um `settings.json` derivado do profile com
+  `permissions.allow` (trabalho seguro pré-aprovado — testes, build, git local, gh),
+  `permissions.ask` (zona cinzenta: `git push`, `npm publish`) e `permissions.deny`
+  (destrutivo: `rm -rf`, force-push, `sudo`, `curl`/`wget`; e **leitura de segredos**
+  `.env`/`*.pem`/`id_rsa`/`secrets/**`). Resultado: o pipeline roda **mais autônomo**
+  (menos prompts no trabalho seguro) e **mais seguro** (o destrutivo é bloqueado, não
+  perguntado).
+- **Guardrails viram trava real** — as pastas em `guardrails.read_only_paths` passam a
+  gerar regras `Write(...)`/`Edit(...)` no `deny`, em vez de serem apenas uma regra de
+  texto no `CLAUDE.md` que o agente podia ignorar.
+- **Subagents escopados — gera `.claude/agents/*.md`** (ADR 002). Cada um dos 13 agentes
+  vira um subagent do Claude Code com **ferramentas por princípio do menor privilégio**:
+  agentes de análise (Architect, Reviewer, Security, Privacy, Reporter, Profiler, Designer)
+  são **read-only** (`Read, Grep, Glob` — sem Write/Edit/Bash); agentes de ação (Coder, QA,
+  Docs, GitHub, Maestro) têm escrita. Cada subagent reusa o prompt do command como system
+  prompt e ganha **contexto isolado**.
+- **Model tiering** — `model` por agente no frontmatter do subagent: `haiku` para
+  Docs/Reporter/Profiler (custo), `opus` para Architect/Security (rigor), `inherit` no
+  resto. Configurável via `agents_runtime` no profile.
+- **Bloco `permissions` e `agents_runtime` no `_base.yaml`** — universais, herdados por
+  todos os profiles; arrays de `permissions` concatenam na herança (um profile pode
+  ADICIONAR comandos da sua stack).
+- **`octechpus doctor` verifica integridade** — compara o hash atual de cada arquivo
+  rastreado com o `manifest.json` e reporta correspondências, arquivos customizados/
+  alterados e faltando (estes últimos sugerem `octechpus update`).
+- **Testes** — `tests/cli-permissions.test.mjs` (11 testes): geração de settings,
+  regras de deny/ask, read-only vs read_write, model tiering, opt-in do cost-engineer,
+  rastreio no manifest e re-render no `profile switch`.
+
+### Notes
+- O `settings.json` é gerenciado pelo Octechpus. Para overrides pessoais sem perder o
+  controle, use `.claude/settings.local.json` (precede o `settings.json` no Claude Code).
+- `octechpus status`/`doctor` agora verificam a presença de `settings.json` e dos
+  subagents escopados.
+
 ## [2.4.2] - 2026-06-23
 
 ### Changed

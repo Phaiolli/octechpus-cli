@@ -54,6 +54,104 @@ security:
   secret_scanning: true
   supply_chain: true       # dependency audit / SBOM / pinned versions
 
+# ── Permissions (gera .claude/settings.json) ──────────────────────────────────
+# Modelo de menor privilégio para o Claude Code: pré-aprova o trabalho seguro
+# (allow), pede confirmação na zona cinzenta (ask) e bloqueia o destrutivo (deny).
+# Arrays concatenam na herança — um profile pode ADICIONAR comandos da sua stack.
+# Regras extras de deny para pastas read-only são derivadas de guardrails.read_only_paths.
+permissions:
+  allow:
+    # leitura / navegação
+    - "Bash(ls:*)"
+    - "Bash(cat:*)"
+    - "Bash(grep:*)"
+    - "Bash(rg:*)"
+    - "Bash(find:*)"
+    - "Bash(echo:*)"
+    - "Bash(pwd)"
+    # git (leitura + fluxo local)
+    - "Bash(git status:*)"
+    - "Bash(git diff:*)"
+    - "Bash(git log:*)"
+    - "Bash(git branch:*)"
+    - "Bash(git add:*)"
+    - "Bash(git commit:*)"
+    - "Bash(git checkout:*)"
+    - "Bash(git stash:*)"
+    # toolchains comuns (cobre as stacks suportadas out-of-the-box)
+    - "Bash(npm test:*)"
+    - "Bash(npm run:*)"
+    - "Bash(npm ci:*)"
+    - "Bash(npm install:*)"
+    - "Bash(npx:*)"
+    - "Bash(pnpm:*)"
+    - "Bash(yarn:*)"
+    - "Bash(node:*)"
+    - "Bash(pytest:*)"
+    - "Bash(python:*)"
+    - "Bash(python3:*)"
+    - "Bash(pip:*)"
+    - "Bash(uv:*)"
+    - "Bash(ruff:*)"
+    - "Bash(go test:*)"
+    - "Bash(go build:*)"
+    - "Bash(go vet:*)"
+    - "Bash(cargo test:*)"
+    - "Bash(cargo build:*)"
+    - "Bash(cargo clippy:*)"
+    - "Bash(mvn:*)"
+    - "Bash(gradle:*)"
+    - "Bash(dotnet:*)"
+    - "Bash(bundle:*)"
+    - "Bash(rspec:*)"
+    - "Bash(composer:*)"
+    - "Bash(php:*)"
+    - "Bash(gh:*)"
+  ask:
+    # ações com efeito externo — pausa e pede aprovação humana
+    - "Bash(git push:*)"
+    - "Bash(npm publish:*)"
+  deny:
+    # destrutivo / irreversível
+    - "Bash(rm -rf:*)"
+    - "Bash(git push --force:*)"
+    - "Bash(git push -f:*)"
+    - "Bash(git reset --hard:*)"
+    - "Bash(sudo:*)"
+    - "Bash(chmod 777:*)"
+    # exfiltração de rede
+    - "Bash(curl:*)"
+    - "Bash(wget:*)"
+    # leitura de segredos — agentes nunca devem ler .env / chaves privadas
+    - "Read(./.env)"
+    - "Read(./.env.*)"
+    - "Read(./**/.env)"
+    - "Read(./**/*.pem)"
+    - "Read(./**/id_rsa)"
+    - "Read(./secrets/**)"
+
+# ── Runtime dos agentes (gera .claude/agents/*.md) ────────────────────────────
+# Cada agente vira um subagent do Claude Code com ferramentas escopadas e modelo
+# próprio. Princípio do menor privilégio: agentes de ANÁLISE são read-only (não
+# têm Write/Edit/Bash), agentes de AÇÃO têm escrita. Model tiering controla custo.
+#   tools: read_only  → Read, Grep, Glob
+#   tools: read_write → Read, Write, Edit, Bash, Grep, Glob
+#   model: inherit | haiku | sonnet | opus
+agents_runtime:
+  maestro:       { tools: read_write, model: inherit }
+  github:        { tools: read_write, model: inherit }
+  architect:     { tools: read_only,  model: opus }
+  designer:      { tools: read_only,  model: inherit }
+  coder:         { tools: read_write, model: inherit }
+  reviewer:      { tools: read_only,  model: inherit }
+  qa:            { tools: read_write, model: inherit }
+  security:      { tools: read_only,  model: opus }
+  privacy:       { tools: read_only,  model: inherit }
+  docs:          { tools: read_write, model: haiku }
+  reporter:      { tools: read_only,  model: haiku }
+  profiler:      { tools: read_only,  model: haiku }
+  cost_engineer: { tools: read_only,  model: inherit }
+
 # ── Privacy / Compliance ──────────────────────────────────────────────────────
 compliance:
   framework: lgpd          # lgpd | gdpr | lgpd_gdpr | none

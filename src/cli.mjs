@@ -18,7 +18,7 @@ const __dirname = dirname(__filename)
 // CONFIG
 // ═══════════════════════════════════════════════════════════
 
-const VERSION = '2.4.2'
+const VERSION = '2.5.0'
 const TEMPLATES_DIR = join(__dirname, 'templates')
 const DESIGN_SYSTEM_TEMPLATES_DIR = join(TEMPLATES_DIR, 'design-system')
 const MANIFEST_PATH = '.octechpus/manifest.json'
@@ -32,6 +32,99 @@ const RENDERED_TEMPLATES = new Set([
   'commands/docs.md', 'commands/github-issue.md', 'commands/profiler.md',
   'commands/design.md', 'commands/cost-engineer.md', 'commands/audit.md',
 ])
+
+// Tool presets for scoped subagents (least privilege).
+//   read_only  → analysis agents (Reviewer, Security, Privacy, Architect…)
+//   read_write → action agents (Coder, QA, Docs, GitHub, Maestro)
+const TOOL_PRESETS = {
+  read_only: 'Read, Grep, Glob',
+  read_write: 'Read, Write, Edit, Bash, Grep, Glob',
+}
+
+// The 13 agents, mapped to the command template that becomes their system prompt.
+// `flag` matches the keys in profile.agents / profile.agents_runtime (opt-in gating).
+// pipeline.md and audit.md stay as slash commands (orchestration entry points).
+const SUBAGENT_DEFS = [
+  { flag: 'maestro',       name: 'maestro',       command: 'maestro',       desc: 'Orquestra o pipeline — classifica a demanda, define critérios testáveis e delega aos demais agentes' },
+  { flag: 'github',        name: 'github',        command: 'github-issue',  desc: 'Gestão de GitHub — issues, branches conventional, commits semânticos e PRs' },
+  { flag: 'architect',     name: 'architect',     command: 'architect',     desc: 'Análise de impacto técnico, ADRs, NFRs e classificação de dados — somente leitura' },
+  { flag: 'designer',      name: 'designer',      command: 'design',        desc: 'Boas práticas de UX/UI stack-agnósticas para demandas de interface — somente leitura' },
+  { flag: 'coder',         name: 'coder',         command: 'coder',         desc: 'Implementa o plano do Architect com mudanças cirúrgicas' },
+  { flag: 'reviewer',      name: 'reviewer',      command: 'review',        desc: 'Code review com severidade — somente leitura, nunca edita o código que revisa' },
+  { flag: 'qa',            name: 'qa',            command: 'qa',            desc: 'Cria testes unit/integração/E2E e negativos de segurança' },
+  { flag: 'security',      name: 'security',      command: 'security',      desc: 'Audit OWASP 2021 + API Top 10 — somente leitura, apenas reporta achados' },
+  { flag: 'privacy',       name: 'privacy',       command: 'privacy',       desc: 'Conformidade LGPD/GDPR — somente leitura, apenas reporta achados' },
+  { flag: 'docs',          name: 'docs',          command: 'docs',          desc: 'Docstrings, README, CHANGELOG e ADRs' },
+  { flag: 'reporter',      name: 'reporter',      command: 'reporter',      desc: 'Relatório consolidado do pipeline — somente leitura' },
+  { flag: 'profiler',      name: 'profiler',      command: 'profiler',      desc: 'Re-detecção de stack e drift de profile — somente leitura' },
+  { flag: 'cost_engineer', name: 'cost-engineer', command: 'cost-engineer', desc: 'Guarda de custo de API/infra — somente leitura, apenas reporta achados' },
+]
+
+function dedup(arr) {
+  return [...new Set(arr)]
+}
+
+/**
+ * Builds the .claude/settings.json content from a resolved profile.
+ * Pre-approves safe work (allow), prompts on the gray zone (ask) and blocks the
+ * destructive set (deny). Guardrail folders become Write/Edit deny rules so the
+ * read-only paths declared in CLAUDE.md are enforced, not merely suggested.
+ */
+function buildSettings(profile) {
+  const perms = profile?.permissions || {}
+  const allow = [...(perms.allow || [])]
+  const ask = [...(perms.ask || [])]
+  const deny = [...(perms.deny || [])]
+
+  const readOnlyPaths = profile?.guardrails?.read_only_paths || []
+  for (const p of readOnlyPaths) {
+    const clean = String(p).replace(/\/+$/, '')
+    if (!clean) continue
+    // Already a glob (e.g. "profiles/**/prompts/**") → use as-is; else match the subtree.
+    const glob = /[*?]/.test(clean) ? clean : `${clean}/**`
+    deny.push(`Edit(${glob})`)
+    deny.push(`Write(${glob})`)
+  }
+
+  const settings = {
+    permissions: {
+      allow: dedup(allow),
+      ask: dedup(ask),
+      deny: dedup(deny),
+    },
+  }
+  return JSON.stringify(settings, null, 2) + '\n'
+}
+
+/** Subagent definitions active for this profile (respects opt-in agents like cost_engineer). */
+function getActiveSubagents(profile) {
+  return SUBAGENT_DEFS.filter(def => profile?.agents?.[def.flag] !== false)
+}
+
+/** Builds a single .claude/agents/<name>.md: scoped frontmatter + rendered role body. */
+function buildSubagent(def, profile) {
+  const rt = profile?.agents_runtime?.[def.flag] || { tools: 'read_write', model: 'inherit' }
+  const tools = TOOL_PRESETS[rt.tools] || TOOL_PRESETS.read_write
+  const model = rt.model || 'inherit'
+  const body = loadRenderedTemplate(`commands/${def.command}.md`, profile)
+  const frontmatter =
+    `---\n` +
+    `name: ${def.name}\n` +
+    `description: ${def.desc}\n` +
+    `tools: ${tools}\n` +
+    `model: ${model}\n` +
+    `---\n\n`
+  return frontmatter + body
+}
+
+/** All generated non-command files (settings + subagents) as { relPath, content }. */
+function buildGeneratedFiles(profile) {
+  const files = [{ relPath: '.claude/settings.json', content: buildSettings(profile) }]
+  for (const def of getActiveSubagents(profile)) {
+    files.push({ relPath: `.claude/agents/${def.name}.md`, content: buildSubagent(def, profile) })
+  }
+  return files
+}
 
 // ═══════════════════════════════════════════════════════════
 // HELPERS
@@ -274,6 +367,24 @@ async function commandInit(targetDir, options = {}) {
   console.log('')
 
   // ─────────────────────────────────────────────
+  // 1b. Permissions + Subagents (.claude/)
+  // ─────────────────────────────────────────────
+  console.log(bold('  Permissions & Subagents (.claude/)'))
+
+  for (const { relPath, content } of buildGeneratedFiles(profile)) {
+    const filepath = join(projectDir, relPath)
+    if (existsSync(filepath) && !force) {
+      fileExists(filepath)
+      existed++
+    } else {
+      writeFile(filepath, content, { force: true, dryRun })
+      created++
+      if (!dryRun) manifestFiles[relPath] = computeHash(content)
+    }
+  }
+  console.log('')
+
+  // ─────────────────────────────────────────────
   // 2. CLAUDE.md
   // ─────────────────────────────────────────────
   console.log(bold('  Project Config'))
@@ -414,6 +525,8 @@ async function commandInit(targetDir, options = {}) {
   } else {
     console.log(`  ${c('green', '✓')} Octechpus installed! Profile: ${c('cyan', profile.name)}`)
     console.log(`  Created: ${c('green', created)} files | Existing: ${c('blue', existed)} files`)
+    console.log(`  ${c('dim', 'Permissões em')} ${c('cyan', '.claude/settings.json')} ${c('dim', '· subagents escopados em')} ${c('cyan', '.claude/agents/')}`)
+    console.log(`  ${c('dim', 'Personalize sem perder o controle: use')} ${c('cyan', '.claude/settings.local.json')} ${c('dim', '(precede settings.json)')}`)
   }
   console.log('')
   console.log(`  ${bold('Available commands in Claude Code:')}`)
@@ -463,6 +576,8 @@ function commandStatus(targetDir) {
   const checks = [
     { path: '.claude/commands/pipeline.md', label: 'Pipeline command', critical: true },
     { path: '.claude/commands/audit.md', label: 'Audit command', critical: true },
+    { path: '.claude/settings.json', label: 'Permissions (settings.json)', critical: false },
+    { path: '.claude/agents', label: 'Scoped subagents (.claude/agents/)', critical: false },
     { path: '.claude/commands/architect.md', label: 'Architect command', critical: false },
     { path: '.claude/commands/coder.md', label: 'Coder command', critical: false },
     { path: '.claude/commands/review.md', label: 'Review command', critical: false },
@@ -565,6 +680,64 @@ async function commandDoctor(targetDir) {
     issues++
   }
 
+  // Permissions check
+  const settingsPath = join(projectDir, '.claude', 'settings.json')
+  if (existsSync(settingsPath)) {
+    try {
+      const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'))
+      if (settings?.permissions?.deny?.length) {
+        console.log(`  ${c('green', '✓')} Permissions configured (${settings.permissions.deny.length} deny rules)`)
+      } else {
+        console.log(`  ${c('yellow', '⚠')} settings.json has no deny rules — run ${c('cyan', 'npx octechpus update')}`)
+        issues++
+      }
+    } catch {
+      console.log(`  ${c('yellow', '⚠')} .claude/settings.json is not valid JSON`)
+      issues++
+    }
+  } else {
+    console.log(`  ${c('yellow', '⚠')} No .claude/settings.json — agents run without permission guardrails`)
+    console.log(`    ${c('dim', 'Run')} ${c('cyan', 'npx octechpus update')} ${c('dim', 'to generate it')}`)
+    issues++
+  }
+
+  // Subagents check
+  const agentsDir = join(projectDir, '.claude', 'agents')
+  if (existsSync(agentsDir)) {
+    const agentFiles = readdirSync(agentsDir).filter(f => f.endsWith('.md'))
+    console.log(`  ${c('green', '✓')} ${agentFiles.length} scoped subagent(s) in .claude/agents/`)
+  } else {
+    console.log(`  ${c('yellow', '⚠')} No .claude/agents/ — run ${c('cyan', 'npx octechpus update')} to scaffold scoped subagents`)
+    issues++
+  }
+
+  // Integrity check — compare current file hashes against the manifest
+  if (manifest?.files && Object.keys(manifest.files).length > 0) {
+    let matched = 0
+    let diverged = 0
+    const missing = []
+    for (const [relPath, expectedHash] of Object.entries(manifest.files)) {
+      const filepath = join(projectDir, relPath)
+      if (!existsSync(filepath)) { missing.push(relPath); continue }
+      const currentHash = computeHash(readFileSync(filepath, 'utf-8'))
+      if (currentHash === expectedHash) matched++
+      else diverged++
+    }
+    if (missing.length === 0 && diverged === 0) {
+      console.log(`  ${c('green', '✓')} Integrity: all ${matched} tracked files match the manifest`)
+    } else {
+      const parts = [`${matched} ok`]
+      if (diverged) parts.push(`${diverged} customizada(s)/alterada(s)`)
+      if (missing.length) parts.push(`${missing.length} faltando`)
+      console.log(`  ${c('yellow', '⚠')} Integrity: ${parts.join(', ')}`)
+      if (missing.length) {
+        console.log(`    ${c('dim', 'Faltando:')} ${missing.slice(0, 5).join(', ')}${missing.length > 5 ? '…' : ''}`)
+        console.log(`    ${c('dim', 'Run')} ${c('cyan', 'npx octechpus update')} ${c('dim', 'to restore missing files')}`)
+        issues++
+      }
+    }
+  }
+
   // Git check
   if (!existsSync(join(projectDir, '.git'))) {
     console.log(`  ${c('yellow', '⚠')} Not a git repository — GitHub agent won't work`)
@@ -649,6 +822,35 @@ async function commandUpdate(targetDir, options = {}) {
     writeFile(filepath, newContent, { force: true, dryRun })
     updated++
     if (!dryRun) updatedHashes[relPath] = newHash
+  }
+
+  // settings.json + subagents — same customization-preserving logic as commands
+  if (profile) {
+    for (const { relPath, content } of buildGeneratedFiles(profile)) {
+      const filepath = join(projectDir, relPath)
+      const newHash = computeHash(content)
+
+      if (!existsSync(filepath)) {
+        writeFile(filepath, content, { force: true, dryRun })
+        added++
+        if (!dryRun) updatedHashes[relPath] = newHash
+        continue
+      }
+
+      if (keepCustomizations && !force && manifest?.files?.[relPath]) {
+        const currentHash = computeHash(readFileSync(filepath, 'utf-8'))
+        if (currentHash !== manifest.files[relPath]) {
+          fileSkipped(filepath, 'customized — use --force to override')
+          skippedCount++
+          updatedHashes[relPath] = currentHash
+          continue
+        }
+      }
+
+      writeFile(filepath, content, { force: true, dryRun })
+      updated++
+      if (!dryRun) updatedHashes[relPath] = newHash
+    }
   }
 
   const agentsPath = join(projectDir, 'docs', 'OCTECHPUS_AGENTS.md')
@@ -808,6 +1010,14 @@ async function commandProfile(subcommand, profileArg, targetDir) {
         const content = loadRenderedTemplate(`commands/${cmd}.md`, newProfile)
         writeFile(filepath, content, { force: true })
         manifest.files[`.claude/commands/${cmd}.md`] = computeHash(content)
+        switched++
+      }
+
+      // settings.json + subagents are profile-derived — re-render on switch
+      for (const { relPath, content } of buildGeneratedFiles(newProfile)) {
+        const filepath = join(projectDir, relPath)
+        writeFile(filepath, content, { force: true })
+        manifest.files[relPath] = computeHash(content)
         switched++
       }
 

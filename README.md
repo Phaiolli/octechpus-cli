@@ -91,22 +91,28 @@ _base
 ```
 seu-projeto/
 ├── .claude/
-│   └── commands/              ← agentes como slash commands
-│       ├── pipeline.md            /pipeline
-│       ├── maestro.md             /maestro
-│       ├── audit.md               /audit
-│       ├── architect.md           /architect
-│       ├── coder.md               /coder
-│       ├── review.md              /review
-│       ├── qa.md                  /qa
-│       ├── security.md            /security
-│       ├── privacy.md             /privacy   ← LGPD/GDPR
-│       ├── reporter.md            /reporter
-│       ├── docs.md                /docs
-│       ├── github-issue.md        /github-issue
-│       ├── profiler.md            /profiler
-│       ├── design.md              /design
-│       └── cost-engineer.md       /cost
+│   ├── commands/              ← agentes como slash commands (orquestração)
+│   │   ├── pipeline.md            /pipeline
+│   │   ├── maestro.md             /maestro
+│   │   ├── audit.md               /audit
+│   │   ├── architect.md           /architect
+│   │   ├── coder.md               /coder
+│   │   ├── review.md              /review
+│   │   ├── qa.md                  /qa
+│   │   ├── security.md            /security
+│   │   ├── privacy.md             /privacy   ← LGPD/GDPR
+│   │   ├── reporter.md            /reporter
+│   │   ├── docs.md                /docs
+│   │   ├── github-issue.md        /github-issue
+│   │   ├── profiler.md            /profiler
+│   │   ├── design.md              /design
+│   │   └── cost-engineer.md       /cost
+│   ├── agents/                ← subagents escopados (tools + modelo por agente)
+│   │   ├── security.md            read-only · opus
+│   │   ├── coder.md               read-write · inherit
+│   │   ├── docs.md                read-write · haiku
+│   │   └── … (um por agente ativo)
+│   └── settings.json          ← permissões: allow / ask / deny (segurança)
 ├── .github/
 │   ├── ISSUE_TEMPLATE/            Templates bug / feature / refactor
 │   └── PULL_REQUEST_TEMPLATE.md
@@ -122,6 +128,45 @@ seu-projeto/
 > pronto. O agente **Designer** é stack-agnóstico — aplica melhores práticas de UX/UI
 > e **pede o design system do Claude Design em runtime**. Se quiser um starter local,
 > use `--with-design-system` ou `npx octechpus design-system add`.
+
+---
+
+## Permissões e subagents (v2.5)
+
+Desde a v2.5 o `init` configura **segurança por padrão** — sem você precisar aprovar
+cada ação dos agentes. Ver [ADR 002](docs/adr/002-evolucao-seguranca-e-eficiencia-agentes.md).
+
+### `.claude/settings.json` — modelo de menor privilégio
+
+Gerado a partir do profile, com três níveis:
+
+| Nível | Comportamento | Exemplos |
+|---|---|---|
+| `allow` | roda **sem perguntar** | `npm test`, `git commit`, `pytest`, `cargo build`, `gh …` |
+| `ask` | pausa e **pede aprovação** | `git push`, `npm publish` |
+| `deny` | **bloqueado** (nem pergunta) | `rm -rf`, force-push, `sudo`, `curl`/`wget`, **ler `.env`/chaves** |
+
+As pastas em `guardrails.read_only_paths` viram regras `Write(...)`/`Edit(...)` no `deny` —
+o guardrail deixa de ser texto no `CLAUDE.md` e passa a ser **trava imposta**.
+
+> O resultado é **mais autonomia** (o trabalho seguro flui sem prompts) **e mais segurança**
+> (o destrutivo é barrado, não perguntado). Para overrides pessoais, use
+> `.claude/settings.local.json` — ele precede o `settings.json`.
+
+### `.claude/agents/` — subagents escopados
+
+Cada agente vira um subagent do Claude Code com **contexto isolado**, **ferramentas por
+princípio do menor privilégio** e **modelo próprio**:
+
+| Agente | Tools | Modelo |
+|---|---|---|
+| Architect · Reviewer · Security · Privacy · Reporter · Profiler · Designer | `Read, Grep, Glob` (**read-only**) | — |
+| Coder · QA · Docs · GitHub · Maestro | `Read, Write, Edit, Bash, Grep, Glob` | — |
+| Security · Architect | — | `opus` (rigor) |
+| Docs · Reporter · Profiler | — | `haiku` (custo) |
+
+Os agentes de **análise não conseguem editar código** (não têm a ferramenta) — a segurança
+vem de *não ter a capacidade*, não de te perguntar. Configurável via `agents_runtime` no profile.
 
 ---
 
@@ -293,12 +338,12 @@ octechpus doctor
 ## Testes
 
 ```bash
-npm test              # 113 testes, ~1.5s
+npm test              # 129 testes, ~2.5s
 npm run test:watch    # modo watch
 npm run test:coverage # com cobertura
 ```
 
-Cobertura: profile-loader, stack-detector, template-renderer, cli-init, cli-profile-commands, template-rendering-integration.
+Cobertura: profile-loader, stack-detector, template-renderer, cli-init, cli-permissions, cli-profile-commands, template-rendering-integration.
 
 ---
 
@@ -340,7 +385,7 @@ Detalhes e troubleshooting de auth: ver `CLAUDE.md` → "Como publicar no npm".
 
 ## Versão atual
 
-**2.4.0** — Agente Privacy/LGPD, Designer stack-agnóstico (always-on), Security OWASP 2021 + API Top 10, 8 novos profiles (incl. `generic`), tier `warn_patterns` e Maestro/Reporter explícitos.  
+**2.5.0** — Modelo de permissão (`.claude/settings.json` com allow/ask/deny + guardrails como trava real), subagents escopados (`.claude/agents/` com tools por menor privilégio e model tiering Haiku/Opus). Ver [ADR 002](docs/adr/002-evolucao-seguranca-e-eficiencia-agentes.md).  
 Veja o [CHANGELOG](CHANGELOG.md) para histórico completo.
 
 ---
