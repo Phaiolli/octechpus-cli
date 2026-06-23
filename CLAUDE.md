@@ -179,30 +179,55 @@ Ao bumpar versão, atualizar ambos + `CHANGELOG.md`.
 
 ### Como publicar no npm
 
-A publicação é feita **manualmente pelo terminal** — não existe CI de publish.
-O `test.yml` roda os testes em todo push/PR, mas o publish é sempre local.
+Existem **dois caminhos**: o automático (recomendado) via GitHub Actions e o
+manual (fallback). O `test.yml` roda os testes em todo push/PR; o
+`.github/workflows/publish.yml` publica no `npm` quando a versão muda no `main`.
 
-Passo a passo para uma nova release:
+#### Release (passo a passo — vale para os dois caminhos)
 
 ```bash
-# 1. Garantir que está logado no npm
-npm whoami   # deve retornar o usuário correto
-
-# 2. Bumpar a versão nos dois lugares obrigatórios
+# 1. Bumpar a versão nos dois lugares obrigatórios (devem ficar em sync)
 #    - package.json  → campo "version"
 #    - src/cli.mjs   → constante VERSION
-
-# 3. Atualizar CHANGELOG.md com a nova versão e data
-
-# 4. Rodar os testes
+# 2. Atualizar CHANGELOG.md com a nova versão e data
+# 3. Rodar os testes
 npm test
-
-# 5. Commit, push e publicar
+# 4. Commit + push no main
 git add package.json src/cli.mjs CHANGELOG.md
 git commit -m "chore(release): bump version to X.Y.Z"
 git push origin main
-npm publish --access public
 ```
+
+#### Caminho A — Automático (GitHub Actions, recomendado)
+
+Ao dar push de um bump de versão no `main`, o workflow **Publish to npm**:
+detecta que `package.json` mudou de versão → roda `npm publish --provenance`.
+Se a versão já estiver no npm, ele **pula** (run fica verde). Ou seja, commits
+normais não disparam publish — só quando a versão muda.
+
+**Pré-requisito (configuração única, no site do npm):** vincular o
+**Trusted Publisher** (OIDC, sem token):
+
+> npmjs.com → pacote **octechpus** → **Settings** → **Trusted Publisher** →
+> **GitHub Actions** → Organization/user: `Phaiolli` · Repository:
+> `octechpus-cli` · Workflow: `publish.yml` · Environment: *(em branco)* → Save.
+
+Feito isso, toda nova versão sobe sozinha — sem token para expirar.
+Disparo manual (sem novo commit): `gh workflow run publish.yml --ref main`.
+
+#### Caminho B — Manual (fallback)
+
+Requer um token npm válido em `~/.npmrc` (token *Automation* ou `npm login`):
+
+```bash
+npm whoami                       # deve retornar o usuário (ex.: phaiolli)
+npm publish --access public      # sem --provenance fora do CI
+npm view octechpus version       # confirmar
+```
+
+> ⚠️ Tokens npm **expiram**. Se `whoami` der `E401` / publish der `E404`/`ENEEDAUTH`,
+> o token venceu — gere um novo (`npm token create --type=automation`, pede OTP) e
+> atualize o `~/.npmrc`. Por isso o Caminho A (Trusted Publisher) é preferível.
 
 ### Erros recorrentes a evitar
 

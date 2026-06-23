@@ -304,15 +304,29 @@ Cobertura: profile-loader, stack-detector, template-renderer, cli-init, cli-prof
 
 ## Publicar no npm
 
+**Automático (recomendado):** bumpe a versão (`package.json` + `src/cli.mjs`),
+atualize o `CHANGELOG.md`, commite e dê push no `main`. O workflow
+`.github/workflows/publish.yml` publica via **OIDC / Trusted Publishers** quando a
+versão muda (e pula se já estiver no npm).
+
+> Configuração única no npmjs.com: pacote **octechpus** → Settings → **Trusted
+> Publisher** → GitHub Actions (`Phaiolli/octechpus-cli`, workflow `publish.yml`).
+
 ```bash
-npm whoami                          # confirme login
-# bumpe version em package.json e src/cli.mjs (manter em sync)
+# bumpe version em package.json e src/cli.mjs (em sync) + CHANGELOG
 npm test
 git add package.json src/cli.mjs CHANGELOG.md
 git commit -m "chore(release): bump version to X.Y.Z"
-git push origin main
-npm publish --access public
+git push origin main          # → o workflow publica sozinho
 ```
+
+**Manual (fallback)** — requer token npm válido em `~/.npmrc`:
+
+```bash
+npm whoami && npm publish --access public && npm view octechpus version
+```
+
+Detalhes e troubleshooting de auth: ver `CLAUDE.md` → "Como publicar no npm".
 
 ---
 
