@@ -161,6 +161,22 @@ describe('update — customization preservation', () => {
     expect(result.stdout).toContain('Updated')
   })
 
+  it('adds new agent command files introduced by an upgrade', () => {
+    tmpDir = makeTmpDir()
+    runCLI(['init', '--stack=node-typescript'], { cwd: tmpDir })
+
+    // simula um projeto instalado numa versão anterior (sem os agentes novos)
+    for (const f of ['privacy.md', 'maestro.md', 'reporter.md']) {
+      rmSync(join(tmpDir, '.claude', 'commands', f), { force: true })
+    }
+
+    runCLI(['update'], { cwd: tmpDir })
+
+    for (const f of ['privacy.md', 'maestro.md', 'reporter.md']) {
+      expect(existsSync(join(tmpDir, '.claude', 'commands', f))).toBe(true)
+    }
+  })
+
   it('overrides customizations when --force is passed', () => {
     tmpDir = makeTmpDir()
     runCLI(['init', '--stack=node-typescript'], { cwd: tmpDir })

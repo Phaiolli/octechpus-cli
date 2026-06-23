@@ -18,7 +18,7 @@ const __dirname = dirname(__filename)
 // CONFIG
 // ═══════════════════════════════════════════════════════════
 
-const VERSION = '2.4.0'
+const VERSION = '2.4.1'
 const TEMPLATES_DIR = join(__dirname, 'templates')
 const DESIGN_SYSTEM_TEMPLATES_DIR = join(TEMPLATES_DIR, 'design-system')
 const MANIFEST_PATH = '.octechpus/manifest.json'
@@ -618,16 +618,23 @@ async function commandUpdate(targetDir, options = {}) {
   const commands = getActiveCommands()
 
   let updated = 0
+  let added = 0
   let skippedCount = 0
   const updatedHashes = {}
 
   for (const cmd of commands) {
     const filepath = join(commandsDir, `${cmd}.md`)
-    if (!existsSync(filepath)) continue
-
     const newContent = loadRenderedTemplate(`commands/${cmd}.md`, profile)
     const newHash = computeHash(newContent)
     const relPath = `.claude/commands/${cmd}.md`
+
+    // New agent introduced by an upgrade (e.g. privacy/maestro/reporter) — add it.
+    if (!existsSync(filepath)) {
+      writeFile(filepath, newContent, { force: true, dryRun })
+      added++
+      if (!dryRun) updatedHashes[relPath] = newHash
+      continue
+    }
 
     if (keepCustomizations && !force && manifest?.files?.[relPath]) {
       const currentHash = computeHash(readFileSync(filepath, 'utf-8'))
@@ -659,6 +666,9 @@ async function commandUpdate(targetDir, options = {}) {
 
   console.log('')
   console.log(`  ${c('green', `✓ Updated ${updated} files`)}`)
+  if (added > 0) {
+    console.log(`  ${c('green', `✓ Added ${added} new agent command(s)`)} ${c('dim', '(novos agentes desta versão)')}`)
+  }
   if (skippedCount > 0) {
     console.log(`  ${c('yellow', `⊘ Skipped ${skippedCount} customized file(s)`)} ${c('dim', '(use --force to override)')}`)
   }
