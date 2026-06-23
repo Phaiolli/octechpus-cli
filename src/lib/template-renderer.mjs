@@ -38,7 +38,9 @@ export function renderTemplate(template, profile, { strict = true } = {}) {
       (_, path, body) => {
         const key = path.slice('stack.'.length)
         const val = getByPath(profile, key)
-        return val ? body : ''
+        // empty arrays are falsy here (an empty list should not render its block)
+        const truthy = Array.isArray(val) ? val.length > 0 : !!val
+        return truthy ? body : ''
       }
     )
   } while (result !== prev)

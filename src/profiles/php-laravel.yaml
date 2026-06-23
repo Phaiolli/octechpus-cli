@@ -1,0 +1,64 @@
+extends: _base
+name: php-laravel
+description: "PHP + Laravel (Pest/PHPUnit + PHPStan + Pint)"
+tags: [backend, api, web, php, laravel]
+when_to_use: "aplicações Laravel (composer.json com laravel/*)"
+
+language: php
+runtime: "php>=8.2"
+package_manager: composer
+
+testing:
+  framework: pest
+  fixtures: factories
+  http_mock: http_fake
+  e2e: null
+  coverage_target: 80
+
+validation:
+  library: laravel_validation   # Form Requests / validator()
+
+docs:
+  format: phpdoc
+  api: scribe_openapi
+
+linting:
+  formatter: pint
+  type_checker: phpstan         # nível alto (larastan)
+  config: phpstan.neon
+
+conventions:
+  imports: psr4
+  naming: camelCase_methods_PascalCase_classes
+
+agents:
+  cost_engineer: false
+
+forbidden_patterns:
+  - "var_dump\\("
+  - "dd\\("
+  - "die\\("
+  - "eval\\("
+
+warn_patterns:
+  - "@\\w+\\("                  # supressão de erro com @
+  - "DB::raw\\("                # risco de injeção se concatenar input
+  - "TODO(?!.*#\\d)"
+
+guardrails:
+  read_only_paths: []
+
+review_checklist: |
+  - Validação via Form Request em toda entrada externa
+  - Eloquent sem N+1 (eager loading com with()); sem $fillable/$guarded frouxo (mass assignment)
+  - Queries parametrizadas — DB::raw só com bindings, nunca concatenando input
+  - Sem dd()/var_dump()/die() deixados no código; logs via Log facade
+  - Migrações reversíveis; jobs/queues idempotentes
+  - PHPStan (larastan) sem erros no nível configurado
+
+qa_strategy: |
+  - Pest (ou PHPUnit) para feature e unit tests
+  - Model factories para dados de teste; Http::fake() para HTTP externo
+  - Cobre happy/error/edge + negativos de autorização (Policies/Gates)
+  - Sem dado real/PII em factories; testes determinísticos
+  - Cobertura via Xdebug/PCOV; alvo 80%

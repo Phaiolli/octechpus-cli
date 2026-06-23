@@ -1,0 +1,65 @@
+extends: _base
+name: java-spring
+description: "Java + Spring Boot (JUnit 5 + Bean Validation + Maven/Gradle)"
+tags: [backend, api, java, enterprise]
+when_to_use: "APIs e serviços em Java com Spring Boot (pom.xml ou build.gradle)"
+
+language: java
+runtime: "java>=17"
+package_manager: maven
+
+testing:
+  framework: junit5
+  fixtures: null
+  http_mock: wiremock
+  e2e: null
+  coverage_target: 80
+
+validation:
+  library: bean_validation   # Jakarta Validation (annotations @Valid/@NotNull...)
+
+docs:
+  format: javadoc
+  api: springdoc_openapi
+
+linting:
+  formatter: spotless
+  type_checker: null         # compilado (javac)
+  config: pom.xml
+
+conventions:
+  imports: absolute
+  naming: camelCase_methods_PascalCase_classes
+
+agents:
+  cost_engineer: false
+
+forbidden_patterns:
+  - "System\\.out\\.println\\("
+  - "printStackTrace\\("
+  - "catch \\(Exception"
+  - "e\\.printStackTrace"
+
+warn_patterns:
+  - "@SuppressWarnings"
+  - "TODO(?!.*#\\d)"
+  - "@Autowired"            # prefira injeção por construtor
+
+guardrails:
+  read_only_paths: []
+
+review_checklist: |
+  - Injeção de dependência por construtor (não por campo @Autowired)
+  - Exceções tratadas explicitamente; sem catch (Exception) genérico vazio
+  - DTOs validados com Bean Validation (@Valid) em toda entrada externa
+  - Logging via SLF4J (Logger), nunca System.out
+  - Transações (@Transactional) no escopo correto; sem N+1 em JPA
+  - Sem lógica de negócio em controllers (camadas separadas)
+
+qa_strategy: |
+  - JUnit 5 para unitários; Mockito para mocks
+  - @SpringBootTest / @WebMvcTest para testes de fatia
+  - WireMock para integrações HTTP externas
+  - Testcontainers para banco em testes de integração
+  - Cobre happy/error/edge + negativos de autorização; sem PII em fixtures
+  - JaCoCo para cobertura; alvo 80%

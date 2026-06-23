@@ -1,0 +1,69 @@
+extends: _base
+name: generic
+description: "Stack-agnostic fallback — any language/framework, relaxed rules (use when no specific profile fits)"
+
+# Use this profile when:
+#   - the project mixes several languages (monorepo, polyglot)
+#   - the stack has no dedicated profile yet
+#   - auto-detection returned low/no confidence
+# It keeps the full agent pipeline active but does NOT enforce stack-specific
+# tooling, so nothing is rejected just for not matching an opinionated stack.
+
+language: any
+runtime: "any"
+package_manager: any
+
+testing:
+  framework: any            # use whatever the project already uses
+  fixtures: null
+  http_mock: null
+  e2e: null
+  coverage_target: 70
+
+validation:
+  library: native           # validate external inputs with the language's own tools
+
+docs:
+  format: language_native   # follow the language's idiomatic doc style
+  api: null
+
+linting:
+  formatter: null           # respect the project's existing config, if any
+  type_checker: null
+  config: null
+
+conventions:
+  imports: project_convention
+  naming: project_convention
+
+agents:
+  cost_engineer: false
+
+# Relaxed on purpose: only the truly dangerous pattern is a BLOCKER.
+# Everything else is a non-blocking WARNING. The Reviewer still applies the
+# universal checklist below.
+forbidden_patterns:
+  - "eval\\("
+
+warn_patterns:
+  - "TODO(?!.*#\\d)"          # TODO without a linked issue number
+  - "FIXME"
+
+guardrails:
+  read_only_paths: []
+
+review_checklist: |
+  - Names are descriptive; functions are short and single-purpose
+  - Errors are handled explicitly — no silent swallowing
+  - No secrets, credentials or tokens hardcoded
+  - External inputs are validated before use
+  - No dead code, debug statements or commented-out blocks left behind
+  - Public APIs/functions are documented in the language's idiomatic style
+  - Existing project conventions (style, structure, naming) are preserved
+
+qa_strategy: |
+  - Use the test framework the project already adopts
+  - Cover happy path, error path and edge cases for every change
+  - Add a regression test for every bug fixed
+  - No real or production data (PII) in fixtures — use synthetic data only
+  - Target coverage: 70% on changed code (raise per project as it matures)

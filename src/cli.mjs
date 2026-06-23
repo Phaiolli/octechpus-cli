@@ -18,7 +18,7 @@ const __dirname = dirname(__filename)
 // CONFIG
 // ═══════════════════════════════════════════════════════════
 
-const VERSION = '2.3.0'
+const VERSION = '2.4.0'
 const TEMPLATES_DIR = join(__dirname, 'templates')
 const DESIGN_SYSTEM_TEMPLATES_DIR = join(TEMPLATES_DIR, 'design-system')
 const MANIFEST_PATH = '.octechpus/manifest.json'
@@ -26,8 +26,9 @@ const MANIFEST_PATH = '.octechpus/manifest.json'
 // Templates that receive {{stack.xxx}} placeholder rendering
 const RENDERED_TEMPLATES = new Set([
   'CLAUDE.md',
-  'commands/pipeline.md', 'commands/architect.md', 'commands/coder.md',
-  'commands/review.md', 'commands/qa.md', 'commands/security.md',
+  'commands/pipeline.md', 'commands/maestro.md', 'commands/architect.md',
+  'commands/coder.md', 'commands/review.md', 'commands/qa.md',
+  'commands/security.md', 'commands/privacy.md', 'commands/reporter.md',
   'commands/docs.md', 'commands/github-issue.md', 'commands/profiler.md',
   'commands/design.md', 'commands/cost-engineer.md', 'commands/audit.md',
 ])
@@ -60,7 +61,7 @@ function printHelp() {
   console.log(`    ${c('yellow', '--force')}                Overwrite without asking`)
   console.log(`    ${c('yellow', '--minimal')}              Only .claude/commands (no docs, no github)`)
   console.log(`    ${c('yellow', '--dry-run')}              Preview without writing`)
-  console.log(`    ${c('yellow', '--with-design-system')}   Include Designer + design-system/`)
+  console.log(`    ${c('yellow', '--with-design-system')}   Scaffold a local design-system/ starter (optional)`)
   console.log(`    ${c('yellow', '--keep-customizations')}  Update preserves edited files ${c('dim', '(default: true)')}`)
   console.log('')
   console.log(`  ${bold('Examples:')}`)
@@ -121,7 +122,7 @@ function getCurrentProfile(projectDir) {
 }
 
 function getActiveCommands() {
-  return ['pipeline', 'audit', 'architect', 'coder', 'review', 'qa', 'security', 'docs', 'github-issue', 'profiler', 'design', 'cost-engineer']
+  return ['pipeline', 'maestro', 'audit', 'architect', 'coder', 'review', 'qa', 'security', 'privacy', 'reporter', 'docs', 'github-issue', 'profiler', 'design', 'cost-engineer']
 }
 
 function getDesignSystemExcludes(profile) {
@@ -188,8 +189,11 @@ async function selectProfile(projectDir, stackFlag, { askFn = ask } = {}) {
 
   console.log(`  ${c('blue', 'ℹ')} Available profiles:`)
   profiles.forEach((p, i) => {
-    console.log(`    ${c('dim', `${i + 1}.`)} ${c('cyan', p.name.padEnd(26))} ${c('dim', p.description || '')}`)
+    console.log(`    ${c('dim', `${i + 1}.`)} ${c('cyan', p.name.padEnd(18))} ${c('dim', p.description || '')}`)
+    const hint = p.when_to_use || (p.tags?.length ? p.tags.join(', ') : '')
+    if (hint) console.log(`        ${c('dim', `↳ ${hint}`)}`)
   })
+  console.log(`  ${c('dim', 'Em dúvida ou stack mista? use')} ${c('cyan', 'generic')}`)
   console.log('')
 
   const answer = await askFn(`  Select profile (name or 1-${profiles.length}): `)
@@ -368,12 +372,22 @@ async function commandInit(targetDir, options = {}) {
     console.log('')
   }
 
-  console.log(bold('  Design System (design-system/)'))
-  const destDesignSystem = join(projectDir, 'design-system')
-  const dsExcludes = getDesignSystemExcludes(profile)
-  copyDir(DESIGN_SYSTEM_TEMPLATES_DIR, destDesignSystem, { force, dryRun, exclude: dsExcludes })
-  created++
-  console.log('')
+  // Designer is stack-agnostic and does NOT ship a prebuilt design system: it
+  // applies UX/UI best practices and asks for the Claude Design design system at
+  // runtime. A local starter is opt-in via --with-design-system (or `design-system add`).
+  if (withDesignSystem) {
+    console.log(bold('  Design System (design-system/)'))
+    const destDesignSystem = join(projectDir, 'design-system')
+    const dsExcludes = getDesignSystemExcludes(profile)
+    copyDir(DESIGN_SYSTEM_TEMPLATES_DIR, destDesignSystem, { force, dryRun, exclude: dsExcludes })
+    created++
+    console.log('')
+  } else {
+    console.log(bold('  Design System'))
+    console.log(`  ${c('dim', 'skipped — Designer requests the Claude Design design system at runtime')}`)
+    console.log(`  ${c('dim', 'want a local starter? run')} ${c('cyan', 'npx octechpus design-system add')}`)
+    console.log('')
+  }
 
   // ─────────────────────────────────────────────
   // Manifest
@@ -405,11 +419,12 @@ async function commandInit(targetDir, options = {}) {
   console.log(`    ${c('green', '/pipeline')}     — Full agent pipeline`)
   console.log(`    ${c('green', '/audit')}        — Project audit`)
   console.log(`    ${c('green', '/review')}       — Code review`)
-  console.log(`    ${c('green', '/security')}     — Security audit`)
+  console.log(`    ${c('green', '/security')}     — Security audit (OWASP 2021)`)
+  console.log(`    ${c('green', '/privacy')}      — Privacy / LGPD compliance`)
   console.log(`    ${c('green', '/qa')}           — Create tests`)
   console.log(`    ${c('green', '/architect')}    — Architecture analysis`)
   console.log(`    ${c('green', '/docs')}         — Documentation`)
-  console.log(`    ${c('green', '/design')}       — Design system briefing`)
+  console.log(`    ${c('green', '/design')}       — UX/UI briefing (Designer)`)
   console.log(`    ${c('green', '/cost')}         — Cost audit`)
   console.log('')
   console.log(`  ${c('dim', 'Run')} ${c('cyan', 'npx octechpus status')} ${c('dim', 'to verify setup')}`)
@@ -660,7 +675,9 @@ async function commandProfile(subcommand, profileArg, targetDir) {
       console.log(bold('  Available Profiles:'))
       console.log('')
       for (const p of profiles) {
-        console.log(`  ${c('cyan', p.name.padEnd(28))} ${c('dim', p.description || '')}`)
+        console.log(`  ${c('cyan', p.name.padEnd(18))} ${c('dim', p.description || '')}`)
+        const hint = p.when_to_use || (p.tags?.length ? p.tags.join(', ') : '')
+        if (hint) console.log(`  ${' '.repeat(18)} ${c('dim', `↳ ${hint}`)}`)
       }
       console.log('')
       console.log(`  ${c('dim', 'Use:')} npx octechpus init --stack=<name>`)

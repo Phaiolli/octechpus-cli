@@ -56,6 +56,16 @@ Você deve executar TODOS os agentes abaixo na ordem especificada, analisando o 
 - Classifique cada vulnerabilidade: 🔴 CRITICAL / 🟠 HIGH / 🟡 MEDIUM / 🔵 LOW
 - **Score:** Segurança [1-10]
 
+### 5b. ⚖️ PRIVACY — Audit de Conformidade ({{stack.compliance.framework}})
+- Mapeie que **dados pessoais** o projeto trata e onde (modelos, logs, analytics)
+- Verifique **base legal e finalidade** para cada tratamento
+- Busque **PII em logs, telemetria e fixtures/seeds** (dado real em teste = 🔴)
+- Avalie suporte aos **direitos do titular** (acesso, correção, eliminação, portabilidade)
+- Verifique **retenção/descarte** e **transferência internacional** (ex.: LLM/cloud externos)
+- Identifique necessidade de **RIPD/DPIA** e estado do **ROPA**/aviso de privacidade
+- Classifique: 🔴 CRITICAL / 🟠 HIGH / 🟡 MEDIUM / 🔵 LOW
+- **Score:** Privacidade/Conformidade [1-10]
+
 ### 6. 📚 DOCS — Audit de Documentação
 - Verifique existência e qualidade do README.md
 - Verifique se .env.example existe e está completo
@@ -96,10 +106,12 @@ Após todos os agentes executarem, gere o relatório abaixo:
   Qualidade de Código ... [█████░░░░░] X/10
   Cobertura de Testes ... [█████░░░░░] X/10
   Segurança ............. [█████░░░░░] X/10
+  Privacidade/LGPD ...... [█████░░░░░] X/10
   Documentação .......... [█████░░░░░] X/10
   Práticas GitHub ....... [█████░░░░░] X/10
   ─────────────────────────────────────
   SCORE GERAL ........... [█████░░░░░] X/10
+  (piso: se Segurança ou Privacidade < 4, o SCORE GERAL é capado em 4)
 
 ═══════════════════════════════════════════════════════════════
 
@@ -132,6 +144,9 @@ Após todos os agentes executarem, gere o relatório abaixo:
 
 🛡️ DETALHAMENTO: SEGURANÇA
 [Análise completa do Security]
+
+⚖️ DETALHAMENTO: PRIVACIDADE / CONFORMIDADE
+[Análise completa do Privacy]
 
 📚 DETALHAMENTO: DOCUMENTAÇÃO
 [Análise completa do Docs]
@@ -168,7 +183,7 @@ os débitos técnicos encontrados no GitHub]
 
 - ❌ Nenhum agente pode ser pulado
 - 📝 Cada agente DEVE produzir seu score e análise detalhada
-- 🔢 O scorecard geral é a média dos scores individuais
+- 🔢 O scorecard geral é a média dos scores individuais, com **piso**: se Segurança ou Privacidade ficar < 4, o score geral é capado em 4 (risco crítico não é diluído pela média)
 - 📋 Issues críticas devem ter localização exata (arquivo + linha quando possível)
 - 🎯 O plano de ação deve ser prático e priorizado
 - 🏷️ Ao final, sugira as issues a serem criadas no GitHub com título e labels

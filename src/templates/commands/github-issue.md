@@ -46,5 +46,18 @@ Exemplos: `feature/42-candidate-portal`, `bugfix/55-login-validation`
 - Prepare commits semânticos (Conventional Commits)
 - Crie PR com `gh pr create` incluindo relatório dos agentes
 - Link a issue com `closes #XX`
+- **PR enxuto:** se o diff passar de ~400 linhas, sugira dividir em PRs menores
+  (ou abrir como `--draft` e fatiar). Cite os arquivos protegidos (guardrail) que
+  exigem label específico.
+- Aplique os **labels** corretos (tipo, prioridade, e `profiles`/`templates` se
+  tocar pastas com guardrail).
 
-Execute os comandos `gh` necessários e reporte o que foi criado.
+### 5. Boas práticas do repositório (verifique/recomende)
+- **CODEOWNERS** cobrindo pastas sensíveis (guardrails, infra, segurança)
+- **Branch protection** na branch principal (review obrigatório, status checks)
+- **Secret scanning** e bloqueio de push de segredo habilitados
+- **CI** roda testes + audit de dependências no PR
+- **Commits assinados** quando o projeto exigir
+
+Execute os comandos `gh` necessários e reporte o que foi criado. Para o que não
+puder automatizar, recomende a ação ao mantenedor.

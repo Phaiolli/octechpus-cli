@@ -1,6 +1,8 @@
 extends: node-typescript
 name: nextjs-react
-description: "Next.js + React + Tailwind + shadcn/ui (com Designer ativo)"
+description: "Next.js + React + Tailwind + shadcn/ui"
+tags: [frontend, web, react, nextjs, typescript]
+when_to_use: "apps Next.js / React (dep next ou next.config.*)"
 
 agents:
   designer: true
@@ -20,3 +22,7 @@ forbidden_patterns:
   - "p-\\["
   - "m-\\["
   - "transition-all"
+
+warn_patterns:
+  - "<img "            # prefira next/image
+  - "dangerouslySetInnerHTML"

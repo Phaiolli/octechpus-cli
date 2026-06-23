@@ -1,8 +1,16 @@
-import { existsSync, readFileSync } from 'fs'
+import { existsSync, readFileSync, readdirSync } from 'fs'
 import { join } from 'path'
 
 function readJson(filepath) {
   try { return JSON.parse(readFileSync(filepath, 'utf-8')) } catch { return null }
+}
+
+// Returns the name of the first top-level file matching one of the extensions, or null.
+function findByExt(dir, exts) {
+  try {
+    const found = readdirSync(dir).find(f => exts.some(ext => f.endsWith(ext)))
+    return found || null
+  } catch { return null }
 }
 
 function readText(filepath) {
@@ -32,20 +40,39 @@ export function detectStack(projectDir) {
   const cargoPath = join(projectDir, 'Cargo.toml')
   const goModPath = join(projectDir, 'go.mod')
 
-  // ── Node / TypeScript ───────────────────────────────────────────────────────
+  // ── Node / TypeScript / JavaScript ───────────────────────────────────────────
   const pkg = readJson(pkgPath)
   if (pkg) {
     score(candidates, 'node-typescript', 20, 'package.json found')
-    if (existsSync(join(projectDir, 'tsconfig.json'))) {
-      score(candidates, 'node-typescript', 15, 'tsconfig.json found')
+    const hasTs = existsSync(join(projectDir, 'tsconfig.json')) || hasDep(pkg, 'typescript')
+    if (hasTs) {
+      score(candidates, 'node-typescript', 15, 'TypeScript (tsconfig.json / typescript dep)')
+    } else {
+      // Plain JavaScript project — do not force the TypeScript profile
+      score(candidates, 'node-javascript', 25, 'package.json without TypeScript')
+      score(candidates, 'node-typescript', -15, 'no TypeScript, downgrading node-typescript')
     }
-    if (hasDep(pkg, 'next')) {
+    if (hasDep(pkg, 'react-native') || hasDep(pkg, 'expo')) {
+      score(candidates, 'react-native', 40, 'react-native/expo in dependencies')
+      score(candidates, 'node-typescript', -10, 'react-native detected, downgrading node-typescript')
+      score(candidates, 'node-javascript', -10, 'react-native detected, downgrading node-javascript')
+    } else if (hasDep(pkg, 'nuxt')) {
+      score(candidates, 'vue-nuxt', 40, 'nuxt in dependencies')
+      score(candidates, 'node-typescript', -10, 'nuxt detected, downgrading node-typescript')
+      score(candidates, 'node-javascript', -10, 'nuxt detected, downgrading node-javascript')
+    } else if (hasDep(pkg, 'vue')) {
+      score(candidates, 'vue-nuxt', 25, 'vue in dependencies')
+    } else if (hasDep(pkg, 'next')) {
       score(candidates, 'nextjs-react', 40, 'next in dependencies')
       // nextjs-react > node-typescript when next is present
       score(candidates, 'node-typescript', -10, 'next detected, downgrading node-typescript')
+      score(candidates, 'node-javascript', -10, 'next detected, downgrading node-javascript')
     }
     if (existsSync(join(projectDir, 'next.config.js')) || existsSync(join(projectDir, 'next.config.ts'))) {
       score(candidates, 'nextjs-react', 15, 'next.config.* found')
+    }
+    if (existsSync(join(projectDir, 'nuxt.config.ts')) || existsSync(join(projectDir, 'nuxt.config.js'))) {
+      score(candidates, 'vue-nuxt', 15, 'nuxt.config.* found')
     }
     if (existsSync(join(projectDir, 'src', 'app')) || existsSync(join(projectDir, 'app'))) {
       score(candidates, 'nextjs-react', 10, 'app/ directory (Next.js App Router)')
@@ -91,6 +118,39 @@ export function detectStack(projectDir) {
     score(candidates, 'go-api', 20, 'go.mod found')
     if (existsSync(join(projectDir, 'cmd'))) {
       score(candidates, 'go-api', 15, 'cmd/ directory found')
+    }
+  }
+
+  // ── Java (Maven/Gradle + Spring) ──────────────────────────────────────────────
+  const pomXml = readText(join(projectDir, 'pom.xml'))
+  const gradle = readText(join(projectDir, 'build.gradle')) || readText(join(projectDir, 'build.gradle.kts'))
+  if (pomXml || gradle) {
+    score(candidates, 'java-spring', 20, pomXml ? 'pom.xml found' : 'build.gradle found')
+    if ((pomXml || gradle || '').includes('spring')) {
+      score(candidates, 'java-spring', 25, 'spring in build config')
+    }
+  }
+
+  // ── .NET (C#) ─────────────────────────────────────────────────────────────────
+  const csproj = findByExt(projectDir, ['.csproj', '.sln'])
+  if (csproj) {
+    score(candidates, 'dotnet-api', 30, `${csproj} found`)
+  }
+
+  // ── Ruby (Rails) ──────────────────────────────────────────────────────────────
+  const gemfile = readText(join(projectDir, 'Gemfile'))
+  if (gemfile) {
+    score(candidates, 'ruby-rails', 20, 'Gemfile found')
+    if (gemfile.includes('rails')) score(candidates, 'ruby-rails', 25, 'rails in Gemfile')
+  }
+
+  // ── PHP (Laravel) ─────────────────────────────────────────────────────────────
+  const composer = readJson(join(projectDir, 'composer.json'))
+  if (composer) {
+    score(candidates, 'php-laravel', 20, 'composer.json found')
+    const req = { ...composer.require, ...composer['require-dev'] }
+    if (req && Object.keys(req).some(k => k.startsWith('laravel/'))) {
+      score(candidates, 'php-laravel', 25, 'laravel/* in composer.json')
     }
   }
 

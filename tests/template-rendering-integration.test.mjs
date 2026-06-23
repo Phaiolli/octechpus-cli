@@ -35,9 +35,9 @@ describe('architect.md — python-fastapi', () => {
     expect(result).not.toContain('TSDoc')
   })
 
-  it('does NOT render Designer block (designer=false)', () => {
+  it('renders Designer block (designer always-on)', () => {
     const result = render('commands/architect.md', 'python-fastapi')
-    expect(result).not.toContain('Designer Handoff')
+    expect(result).toContain('Designer Handoff')
   })
 })
 
@@ -54,9 +54,9 @@ describe('architect.md — nextjs-react', () => {
 })
 
 describe('architect.md — node-typescript', () => {
-  it('does NOT render Designer block (designer=false)', () => {
+  it('renders Designer block (designer always-on)', () => {
     const result = render('commands/architect.md', 'node-typescript')
-    expect(result).not.toContain('Designer Handoff')
+    expect(result).toContain('Designer Handoff')
   })
 
   it('contains TypeScript-specific rules', () => {
@@ -90,14 +90,20 @@ describe('CLAUDE.md — node-typescript', () => {
     expect(result).not.toContain('Cost Engineer')
   })
 
-  it('does NOT render Designer command (designer=false)', () => {
+  it('renders Designer command (designer always-on)', () => {
     const result = render('CLAUDE.md', 'node-typescript')
-    expect(result).not.toContain('/design')
+    expect(result).toContain('/design')
+  })
+
+  it('contains the Privacy command and compliance framework', () => {
+    const result = render('CLAUDE.md', 'node-typescript')
+    expect(result).toContain('/privacy')
+    expect(result).toContain('lgpd')
   })
 })
 
 describe('CLAUDE.md — nextjs-react', () => {
-  it('contains /design command (designer=true)', () => {
+  it('contains /design command (designer always-on)', () => {
     const result = render('CLAUDE.md', 'nextjs-react')
     expect(result).toContain('/design')
   })
@@ -111,17 +117,54 @@ describe('review.md — python-fastapi', () => {
     expect(result).toContain('print\\(')
   })
 
-  it('does NOT render Design System checklist (designer=false)', () => {
+  it('renders the stack-agnostic UX/UI checklist (designer always-on)', () => {
     const result = render('commands/review.md', 'python-fastapi')
+    expect(result).toContain('Validação de UX/UI')
+    expect(result).toContain('WCAG AA')
+    // no hardcoded stack-specific tooling in the generic checklist
     expect(result).not.toContain('shadcn/ui')
   })
 })
 
 describe('review.md — nextjs-react', () => {
-  it('renders Design System checklist (designer=true)', () => {
+  it('renders the stack-agnostic UX/UI checklist', () => {
     const result = render('commands/review.md', 'nextjs-react')
-    expect(result).toContain('shadcn/ui')
-    expect(result).toContain('lucide-react')
+    expect(result).toContain('Validação de UX/UI')
+    expect(result).toContain('design system')
+    expect(result).toContain('focus-visible')
+  })
+})
+
+describe('review.md — warn_patterns (severity tier)', () => {
+  it('renders the WARNING section when warn_patterns exist', () => {
+    const result = render('commands/review.md', 'node-typescript')
+    expect(result).toContain('🟡 WARNING')
+    expect(result).toContain('@ts-expect-error')
+  })
+
+  it('omits the WARNING section when warn_patterns is empty', () => {
+    const tpl = loadTemplate('commands/review.md')
+    const profile = { ...resolveProfile('python-cli'), warn_patterns: [] }
+    const result = renderTemplate(tpl, profile, { strict: false })
+    expect(result).not.toContain('Padrões desencorajados')
+  })
+})
+
+// ── maestro.md / reporter.md ─────────────────────────────────────────────────
+
+describe('maestro.md', () => {
+  it('contains the severity rubric and iteration cap', () => {
+    const result = render('commands/maestro.md', 'node-typescript')
+    expect(result).toContain('Rubrica de severidade')
+    expect(result).toContain('2 rejeições')
+  })
+})
+
+describe('reporter.md', () => {
+  it('contains the scoring floor rule', () => {
+    const result = render('commands/reporter.md', 'node-typescript')
+    expect(result).toContain('Piso')
+    expect(result).toContain('Privacidade')
   })
 })
 
@@ -166,14 +209,19 @@ describe('pipeline.md — node-typescript', () => {
     expect(result).not.toContain('COST ENGINEER')
   })
 
-  it('does NOT include Designer step (designer=false)', () => {
+  it('includes Designer step (designer always-on)', () => {
     const result = render('commands/pipeline.md', 'node-typescript')
-    expect(result).not.toContain('DESIGNER')
+    expect(result).toContain('DESIGNER')
+  })
+
+  it('includes the Privacy step always', () => {
+    const result = render('commands/pipeline.md', 'node-typescript')
+    expect(result).toContain('PRIVACY')
   })
 })
 
 describe('pipeline.md — nextjs-react', () => {
-  it('includes Designer step (designer=true)', () => {
+  it('includes Designer step (designer always-on)', () => {
     const result = render('commands/pipeline.md', 'nextjs-react')
     expect(result).toContain('DESIGNER')
   })
@@ -204,5 +252,33 @@ describe('security.md — python-ai-pipeline', () => {
   it('renders read_only_paths block (guardrails non-empty)', () => {
     const result = render('commands/security.md', 'python-ai-pipeline')
     expect(result).toContain('profiles/**/prompts/**')
+  })
+})
+
+describe('security.md — OWASP 2021 + API Top 10', () => {
+  it('uses the OWASP 2021 categories and API security checks', () => {
+    const result = render('commands/security.md', 'node-typescript')
+    expect(result).toContain('2021')
+    expect(result).toContain('SSRF')
+    expect(result).toContain('BOLA')
+    expect(result).toContain('supply chain')
+  })
+})
+
+// ── privacy.md ───────────────────────────────────────────────────────────────
+
+describe('privacy.md — compliance framework injection', () => {
+  it('injects lgpd as the active framework by default', () => {
+    const result = render('commands/privacy.md', 'node-typescript')
+    expect(result).toContain('lgpd')
+    expect(result).toContain('base legal')
+    expect(result).toContain('PII')
+  })
+
+  it('renders for every stack (privacy is always-on)', () => {
+    for (const p of ['python-fastapi', 'go-api', 'rust-cli', 'nextjs-react', 'generic']) {
+      const result = render('commands/privacy.md', p)
+      expect(result).toContain('Privacy / Compliance Report')
+    }
   })
 })

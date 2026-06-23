@@ -1,0 +1,45 @@
+extends: node-typescript
+name: react-native
+description: "React Native / Expo (TypeScript + Jest) — com Designer ativo"
+tags: [mobile, frontend, react-native, expo, typescript]
+when_to_use: "apps mobile React Native ou Expo (dependência react-native/expo)"
+
+testing:
+  framework: jest
+  fixtures: null
+  http_mock: msw
+  e2e: detox
+  coverage_target: 75
+
+frontend:
+  framework: react_native
+  styling: stylesheet
+  icons: any
+
+design_system:
+  tokens: none
+
+forbidden_patterns:
+  - "!override"
+  - "console\\.log\\("
+  - ": any"
+  - "as any"
+  - "// @ts-ignore"
+
+warn_patterns:
+  - "Dimensions\\.get\\("       # prefira hooks responsivos (useWindowDimensions)
+  - "TODO(?!.*#\\d)"
+
+review_checklist: |
+  - Componentes tipados; props e estilos via StyleSheet (sem objetos inline pesados)
+  - Listas longas com FlatList/SectionList (virtualização) — nunca map em ScrollView
+  - Acessibilidade: accessibilityLabel/role em elementos interativos
+  - Responsivo a tamanhos de tela e safe areas; suporte a tema claro/escuro
+  - Sem segredo hardcoded; sem PII em logs/analytics
+  - Toque com feedback (Pressable) e estados (loading/empty/error)
+
+qa_strategy: |
+  - Jest + React Native Testing Library para componentes (interações, não implementação)
+  - msw para mock de HTTP; Detox para fluxos E2E críticos
+  - Cobre happy/error/edge + regressão; sem PII em fixtures
+  - Coverage alvo: 75% no código alterado

@@ -72,6 +72,11 @@ Para mudanças com impacto **medium** ou **high**, você DEVE produzir um ADR AN
 5. **Dependências** — Novas libs são necessárias? Há alternativas mais leves?
 6. **Integração** — Como se conecta com o que já existe?
 7. **Escalabilidade** — A solução escala? Gera débito técnico?
+8. **NFRs** — Metas de performance (p95/p99), observabilidade (logs/métricas/traces),
+   disponibilidade e estratégia de migração/rollback reversível.
+9. **Classificação de dados** — A mudança toca dado pessoal? Classifique o dado
+   tocado: público / interno / **pessoal** / **sensível**. Isso aciona os agentes
+   Security e Privacy — declare explicitamente no handoff.
 
 {{#if stack.agents.designer}}
 ## Designer Handoff
@@ -91,6 +96,8 @@ Em demandas de UI, após aprovação arquitetural, produza um briefing para o DE
 - **Interfaces/tipos a definir:** [lista]
 - **Padrões de projeto aplicáveis:** [lista]
 - **Novas dependências:** [lista ou "nenhuma"]
+- **NFRs:** [performance / observabilidade / migração-rollback]
+- **Classificação de dados:** [público | interno | pessoal | sensível] → aciona Security/Privacy?
 - **Riscos identificados:** [lista]
 - **Decisão:** approved | needs_changes | rejected
 - **Plano detalhado para o CODER:** [passos]

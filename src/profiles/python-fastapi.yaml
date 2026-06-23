@@ -1,6 +1,8 @@
 extends: _base
 name: python-fastapi
 description: "Python FastAPI backend with Pydantic v2 + pytest"
+tags: [backend, api, python]
+when_to_use: "APIs Python com FastAPI (dep fastapi)"
 
 language: python
 runtime: "python>=3.12"
@@ -30,7 +32,6 @@ conventions:
   naming: snake_case_functions_PascalCase_classes
 
 agents:
-  designer: false
   cost_engineer: false
 
 design_system:
@@ -43,6 +44,11 @@ forbidden_patterns:
   - "def .+\\(.*=\\[\\].*\\):"
   - "def .+\\(.*=\\{\\}.*\\):"
   - "# type: ignore(?! #)"
+
+warn_patterns:
+  - "# noqa(?!:)"
+  - "TODO(?!.*#\\d)"
+  - "assert "          # asserts são removidos com python -O; não use para validação
 
 guardrails:
   read_only_paths: []

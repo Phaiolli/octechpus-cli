@@ -1,0 +1,64 @@
+extends: _base
+name: dotnet-api
+description: "C# + ASP.NET Core (xUnit + FluentValidation + NuGet)"
+tags: [backend, api, csharp, dotnet, enterprise]
+when_to_use: "APIs e serviços em C#/.NET (arquivos .csproj/.sln)"
+
+language: csharp
+runtime: "dotnet>=8"
+package_manager: nuget
+
+testing:
+  framework: xunit
+  fixtures: null
+  http_mock: null
+  e2e: null
+  coverage_target: 80
+
+validation:
+  library: fluentvalidation
+
+docs:
+  format: xml_doc_comments
+  api: swashbuckle_openapi
+
+linting:
+  formatter: dotnet_format
+  type_checker: null          # compilado; nullable reference types habilitado
+  config: .editorconfig
+
+conventions:
+  imports: usings
+  naming: PascalCase_methods_PascalCase_classes
+
+agents:
+  cost_engineer: false
+
+forbidden_patterns:
+  - "Console\\.WriteLine\\("
+  - "catch \\(Exception\\)\\s*\\{\\s*\\}"
+  - "\\.Result"               # bloqueio síncrono sobre Task
+  - "\\.Wait\\(\\)"
+
+warn_patterns:
+  - "#pragma warning disable"
+  - "async void"
+  - "TODO(?!.*#\\d)"
+
+guardrails:
+  read_only_paths: []
+
+review_checklist: |
+  - Nullable reference types habilitado e respeitado
+  - async/await de ponta a ponta (sem .Result/.Wait bloqueante)
+  - Inputs validados com FluentValidation em toda entrada externa
+  - ILogger usado para logs (sem Console.WriteLine)
+  - CancellationToken propagado em operações assíncronas
+  - Injeção de dependência via construtor; sem service locator
+
+qa_strategy: |
+  - xUnit para unitários; Moq/NSubstitute para mocks
+  - WebApplicationFactory para testes de integração de endpoints
+  - Cobre happy/error/edge + negativos de autorização
+  - Sem dado real/PII em fixtures; testes determinísticos
+  - coverlet para cobertura; alvo 80%

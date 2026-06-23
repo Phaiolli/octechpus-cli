@@ -33,6 +33,15 @@ Documente: $ARGUMENTS
 - Manter schema sincronizado com implementação
 {{/if}}
 
+### Privacidade / Dados
+
+Se a mudança coleta, usa ou compartilha **dado pessoal**, documente (insumo do
+ROPA / aviso de privacidade — alinhar com o agente Privacy):
+- Que dado é coletado, **finalidade** e **base legal**
+- **Retenção** (por quanto tempo) e como é descartado/anonimizado
+- Operadores/terceiros que recebem o dado (cloud, LLM, analytics)
+- Em `.env.example`, comentar variáveis que apontam para serviços que processam dado pessoal
+
 ### Decisões técnicas
 
 Criar ADR em `docs/adr/NNN-titulo.md` para decisões com impacto medium/high:
