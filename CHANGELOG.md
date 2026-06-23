@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-06-23
+
+### Added
+- **Novo agente ⚖️ Privacy/LGPD** (`commands/privacy.md`) — always-on, conformidade configurável via `compliance.framework` (`lgpd` por padrão). Cobre base legal/finalidade, minimização, PII em logs/fixtures, direitos do titular, retenção/descarte, transferência internacional e RIPD/DPIA. Roda após o Security no pipeline.
+- **Bloco `compliance` no `_base.yaml`** — `framework`, `privacy_review_required`, `pii_in_logs`.
+- **Profile `generic`** — fallback agnóstico de stack para projetos poliglotas/monorepo ou quando a auto-detecção tem baixa confiança; regras relaxadas (nada é rejeitado só por não bater com uma stack opinativa).
+- **Seção de Privacidade no `/audit`** — score próprio "Privacidade/LGPD" + detalhamento; o score geral agora tem **piso** (Segurança ou Privacidade < 4 capa o geral em 4).
+
+### Changed
+- **Designer agora é always-on e stack-agnóstico** (`agents.designer: true` no `_base`; removidos os overrides `designer: false`). Ele **não traz mais tokens/design system prontos** — aplica melhores práticas de UX/UI (responsividade, WCAG AA, estados completos, `prefers-reduced-motion`, i18n) e **pede o design system do Claude Design em runtime**. A checklist de UI do Reviewer ficou genérica (sem shadcn/Tailwind/lucide hardcoded).
+- **`init` não scaffolda mais `design-system/` por padrão** — agora é opt-in via `--with-design-system` (ou `design-system add`).
+- **Security atualizado para OWASP Top 10 (2021)** + **API Security Top 10** (BOLA/BFLA), **SSRF** e checagens de **supply chain** (audit de dependências, lockfile, secrets em CI/CD).
+- **Architect** passa a exigir **NFRs** (performance/observabilidade/rollback) e **classificação de dados** (público/interno/pessoal/sensível) que aciona Security/Privacy.
+- **Docs** passa a documentar coleta/uso de dado pessoal (insumo de ROPA/aviso de privacidade).
+
+### Added (detecção via Markdown)
+- **Auto-detecção a partir de documentos `.md`** — o `stack-detector` agora lê `README.md` e docs de visão geral (`PROJECT.md`, `ARCHITECTURE.md`, `STACK.md`, `OVERVIEW.md`, `SPEC.md`, `PRD.md`) e infere a stack a partir da prosa (frameworks/linguagens/libs). Permite detectar a stack em projetos **greenfield** descritos antes de existir código/manifests.
+- **Flag `--describe=<file.md>`** no `init` — aponta um documento específico para a detecção. Manifests continuam com peso maior que prosa; `.md` confirma/desempata e pode atingir `high` quando a descrição é clara.
+
+### Added (segunda onda)
+- **Tier de severidade `warn_patterns`** — 🟡 WARNING (não bloqueia) ao lado de `forbidden_patterns` (🔴 BLOCKER). Renderizado em coder/review/CLAUDE; adicionado aos perfis. Resolve falsos-BLOCKER (ex.: `console.log` em CLI).
+- **Agentes Maestro e Reporter explícitos** (`commands/maestro.md`, `commands/reporter.md`) — Maestro com **rubrica de severidade** e **teto de 2 iterações → escala para humano**; Reporter com **piso** no scorecard. Instalados como `/maestro` e `/reporter`.
+- **7 novos profiles**: `node-javascript`, `java-spring`, `dotnet-api`, `ruby-rails`, `php-laravel`, `vue-nuxt`, `react-native` — com **auto-detecção** (pom.xml/build.gradle, .csproj/.sln, Gemfile, composer.json, nuxt, react-native/expo, e JS-puro vs TS).
+- **Metadados `tags` e `when_to_use`** em todos os profiles + listagem melhorada no `init` e `profile list` (mostra "quando usar" e sugere `generic` em caso de dúvida).
+
+### Changed (segunda onda)
+- **Coder**: regras de segredos/PII e feature flags. **Reviewer**: concorrência/race e i18n. **QA**: fixtures sem PII, testes negativos/segurança e smoke de performance. **GitHub**: CODEOWNERS, tamanho de PR, secret-scanning, branch protection. **Profiler**: monorepo/multi-stack/drift de versão. **Cost Engineer**: budget/kill-switch e custo de infra.
+- **Renderer**: `{{#if}}` passa a tratar **array vazio como falsy** (não renderiza bloco vazio — corrige guardrail/warn vazios).
+
+### Fixed
+- `docs/profiles.md` corrigido: arrays são **concatenados** na herança (com sentinela `!override` para substituir), não "replaced".
+
+### Notes
+- Projetos já existentes recebem tudo no próximo `octechpus update`.
+- Suíte de testes: **113 testes passando**.
+
 ## [2.3.0] - 2026-05-03
 
 ### Added

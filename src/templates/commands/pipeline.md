@@ -13,13 +13,13 @@ Identifique o tipo da demanda e selecione o pipeline correto:
 ### UI / Frontend
 **Sinais:** "tela", "página", "componente", "layout", "form", "tabela", "card", "modal", "sidebar", "topbar", "responsivo", "design", "interface", "estilo"; arquivos em `src/components/`, `src/app/**/page.*`, `src/features/**/components/`
 
-**Pipeline:** GitHub → Architect → **Designer** → Coder → Reviewer → QA → Security → {{#if stack.agents.cost_engineer}}Cost Engineer → {{/if}}Docs → Reporter
+**Pipeline:** GitHub → Architect → **Designer** → Coder → Reviewer → QA → Security → Privacy → {{#if stack.agents.cost_engineer}}Cost Engineer → {{/if}}Docs → Reporter
 {{/if}}
 
 ### Backend / Server
 **Sinais:** "API", "endpoint", "service", "repository", "schema", "migration", "job", "queue"
 
-**Pipeline:** GitHub → Architect → Coder → Reviewer → QA → Security → {{#if stack.agents.cost_engineer}}Cost Engineer → {{/if}}Docs → Reporter
+**Pipeline:** GitHub → Architect → Coder → Reviewer → QA → Security → Privacy → {{#if stack.agents.cost_engineer}}Cost Engineer → {{/if}}Docs → Reporter
 
 ### Refactor (sem mudança comportamental)
 
@@ -28,7 +28,7 @@ Identifique o tipo da demanda e selecione o pipeline correto:
 ### Provider Integration
 **Sinais:** integração com API externa paga, configuração de provider, retry policies
 
-**Pipeline:** GitHub → Architect → Coder → Reviewer → Cost Engineer → Security → QA → Docs → Reporter
+**Pipeline:** GitHub → Architect → Coder → Reviewer → Cost Engineer → Security → Privacy → QA → Docs → Reporter
 {{/if}}
 
 ### Prompt Update (projetos AI/ML)
@@ -76,7 +76,9 @@ d) **Selecione o pipeline** e passe os critérios de sucesso como contexto para
 
 **7. 🧪 QA** — Crie testes usando {{stack.testing.framework}}. Garanta cobertura de happy paths, error paths e edge cases. Target: {{stack.testing.coverage_target}}%.
 
-**8. 🛡️ SECURITY** — Audit de segurança: XSS, injection, CSRF, IDOR, dados sensíveis, validação de inputs. Classifique por severidade.
+**8. 🛡️ SECURITY** — Audit de segurança: OWASP 2021 (incl. SSRF, supply chain), API Security Top 10 (BOLA/BFLA), XSS, injection, CSRF, IDOR, validação de inputs. Classifique por severidade.
+
+**8b. ⚖️ PRIVACY** — Conformidade ({{stack.compliance.framework}}): base legal, minimização, PII em logs/fixtures, direitos do titular, retenção, transferência internacional. Classifique por severidade.
 {{#if stack.agents.cost_engineer}}
 **9. 💰 COST ENGINEER** — Audit de custo: chamadas a APIs pagas, retries, loops, estimativa de custo da feature.
 {{/if}}
@@ -99,7 +101,8 @@ d) **Selecione o pipeline** e passe os critérios de sucesso como contexto para
 {{/if}}| 5 | 💻 Coder | Implementação |
 | 6 | 🔍 Reviewer | Code review + checklist de stack |
 | 7 | 🧪 QA | Testes ({{stack.testing.framework}}) |
-| 8 | 🛡️ Security | OWASP Top 10 + vulnerabilidades |
+| 8 | 🛡️ Security | OWASP 2021 + API Top 10 + supply chain |
+| 8b | ⚖️ Privacy | Conformidade {{stack.compliance.framework}} (proteção de dados) |
 {{#if stack.agents.cost_engineer}}| 9 | 💰 Cost Engineer | Audit de custo operacional |
 {{/if}}| 10 | 📚 Docs | {{stack.docs.format}}, README, CHANGELOG, ADRs |
 | 11 | 🐙 GitHub | Commits semânticos e PR final |

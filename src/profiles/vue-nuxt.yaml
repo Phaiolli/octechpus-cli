@@ -1,0 +1,31 @@
+extends: node-typescript
+name: vue-nuxt
+description: "Vue 3 + Nuxt (Tailwind + Vitest) — com Designer ativo"
+tags: [frontend, web, vue, nuxt, typescript]
+when_to_use: "apps Vue 3 / Nuxt (nuxt.config.* ou dependência vue/nuxt)"
+
+frontend:
+  framework: nuxt3
+  styling: tailwind
+  icons: any
+
+design_system:
+  tokens: tailwind
+
+forbidden_patterns:
+  - "<div @click"
+  - "v-html"
+  - "bg-\\[#"
+  - "text-\\[#"
+
+warn_patterns:
+  - "<img "                 # prefira <NuxtImg>
+  - "any>"                  # genéricos amplos demais
+
+review_checklist: |
+  - Componentes com <script setup lang="ts"> e props tipadas
+  - Entradas externas validadas (zod/valibot) antes do uso
+  - Sem v-html com conteúdo não sanitizado (XSS)
+  - Reatividade correta (ref/reactive/computed) — sem mutação de prop
+  - Composables para lógica reutilizável; sem lógica pesada no template
+  - Tokens do design system; zero cor/espaçamento hardcoded

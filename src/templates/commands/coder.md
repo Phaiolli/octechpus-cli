@@ -14,6 +14,10 @@ Implementar: $ARGUMENTS
 4. Nomes descritivos e autoexplicativos
 5. DRY sem premature abstraction
 6. Comentários apenas onde a lógica não é evidente pelo código
+7. **Segredos e PII** — nunca hardcode segredo/token/credencial (use env/secret
+   manager) e nunca logue dado pessoal ou segredo (mascare antes de logar)
+8. **Mudanças arriscadas/irreversíveis** atrás de feature flag quando possível,
+   para permitir rollback sem novo deploy
 
 ## Regras de Karpathy (obrigatórias)
 
@@ -54,14 +58,23 @@ Se qualquer resposta for "sim", reverta o excesso primeiro.
 
 ---
 
-## Padrões proibidos
+## Padrões proibidos (🔴 BLOCKER)
 
 Os padrões abaixo serão rejeitados automaticamente pelo Reviewer:
 
 {{#each stack.forbidden_patterns}}
 - `{{this}}`
 {{/each}}
+{{#if stack.warn_patterns}}
+## Padrões desencorajados (🟡 WARNING)
 
+Evite os padrões abaixo — não bloqueiam, mas o Reviewer sinaliza. Use só com
+justificativa em `## Pontos de atenção`:
+
+{{#each stack.warn_patterns}}
+- `{{this}}`
+{{/each}}
+{{/if}}
 ---
 
 ## Output obrigatório

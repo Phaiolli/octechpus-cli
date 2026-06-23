@@ -44,11 +44,26 @@ describe('resolveProfile', () => {
     expect(profile.frontend.framework).toBe('nextjs_app_router')
   })
 
-  it('nextjs-react has designer=true, node-typescript has designer=false', () => {
+  it('designer is enabled in all profiles (always-on, stack-agnostic)', () => {
     const nextjs = resolveProfile('nextjs-react')
     const node = resolveProfile('node-typescript')
+    const py = resolveProfile('python-fastapi')
     expect(nextjs.agents.designer).toBe(true)
-    expect(node.agents.designer).toBe(false)
+    expect(node.agents.designer).toBe(true)
+    expect(py.agents.designer).toBe(true)
+  })
+
+  it('privacy agent and compliance framework are inherited from _base', () => {
+    const node = resolveProfile('node-typescript')
+    expect(node.agents.privacy).toBe(true)
+    expect(node.compliance.framework).toBe('lgpd')
+  })
+
+  it('generic profile resolves and validates as a fallback', () => {
+    const generic = resolveProfile('generic')
+    expect(generic.name).toBe('generic')
+    expect(generic.language).toBe('any')
+    expect(() => validateProfile(generic)).not.toThrow()
   })
 
   it('nextjs-react forbidden_patterns includes both parent and child patterns', () => {
@@ -58,6 +73,28 @@ describe('resolveProfile', () => {
     expect(patterns.some(p => p.includes('console'))).toBe(true)
     // From nextjs-react itself
     expect(patterns.some(p => p.includes('transition-all'))).toBe(true)
+  })
+
+  it('warn_patterns is inherited/concatenated (severity tier)', () => {
+    const node = resolveProfile('node-typescript')
+    expect(node.warn_patterns).toContain('@ts-expect-error')
+    const nextjs = resolveProfile('nextjs-react')
+    // child warns concat on top of parent warns
+    expect(nextjs.warn_patterns).toContain('@ts-expect-error')
+    expect(nextjs.warn_patterns.some(p => p.includes('img'))).toBe(true)
+  })
+
+  it('generic keeps only eval as BLOCKER; TODO moved to warn', () => {
+    const g = resolveProfile('generic')
+    expect(g.forbidden_patterns).toEqual(['eval\\('])
+    expect(g.warn_patterns.some(p => p.includes('TODO'))).toBe(true)
+  })
+
+  it('react-native uses !override to get a clean forbidden list (no web-only patterns)', () => {
+    const rn = resolveProfile('react-native')
+    expect(rn.forbidden_patterns).not.toContain('<div onClick')
+    expect(rn.testing.framework).toBe('jest')
+    expect(rn.agents.designer).toBe(true)
   })
 
   it('python-ai-pipeline review_checklist contains both Python and AI rules', () => {
@@ -104,5 +141,12 @@ describe('listProfiles', () => {
     const names = listProfiles().map(p => p.name)
     expect(names).toContain('node-typescript')
     expect(names).toContain('python-fastapi')
+  })
+
+  it('includes the new stacks and the generic fallback', () => {
+    const names = listProfiles().map(p => p.name)
+    for (const n of ['generic', 'node-javascript', 'java-spring', 'dotnet-api', 'ruby-rails', 'php-laravel', 'vue-nuxt', 'react-native']) {
+      expect(names).toContain(n)
+    }
   })
 })

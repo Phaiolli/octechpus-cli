@@ -11,8 +11,13 @@ Revise os seguintes arquivos/mudanças: $ARGUMENTS
 1. **Legibilidade** — Nomes descritivos, funções curtas e focadas
 2. **Robustez** — Tratamento de null/undefined/None, edge cases, error handling
 3. **Performance** — Loops desnecessários, queries N+1, memory leaks, event listeners não removidos
-4. **Consistência** — Padrões do projeto, imports, nomenclatura
-5. **Limpeza** — Imports não usados, debug statements, TODOs sem issue, hardcoded values
+4. **Concorrência** — Race conditions, acesso compartilhado sem sincronização,
+   `async`/`await` consistente, cancelamento/timeout, idempotência onde necessário
+5. **Consistência** — Padrões do projeto, imports, nomenclatura
+6. **i18n** — Sem strings de UI hardcoded onde o projeto usa internacionalização;
+   formatação de data/número/moeda localizável
+7. **Limpeza** — Imports não usados, debug statements, TODOs sem issue, hardcoded values
+8. **Segredos/PII** — Nada de segredo hardcoded; nenhum dado pessoal ou segredo em log
 
 ## Validações de Karpathy (🔴 BLOCKER se violadas)
 
@@ -43,14 +48,23 @@ Se qualquer critério crítico estiver ❌ → 🔴 BLOCKER
 
 ---
 
-## Padrões proibidos
+## Padrões proibidos (🔴 BLOCKER)
 
 Os padrões abaixo são **automaticamente BLOCKER**:
 
 {{#each stack.forbidden_patterns}}
 - `{{this}}`
 {{/each}}
+{{#if stack.warn_patterns}}
+## Padrões desencorajados (🟡 WARNING)
 
+Os padrões abaixo geram **WARNING** (não bloqueiam) — registre, mas aceite se houver
+justificativa explícita:
+
+{{#each stack.warn_patterns}}
+- `{{this}}`
+{{/each}}
+{{/if}}
 ---
 {{#if stack.guardrails.read_only_paths}}
 
@@ -68,22 +82,26 @@ Se o PR modifica algum desses sem o label correto → **🔴 BLOCKER**.
 {{/if}}
 {{#if stack.agents.designer}}
 
-## Validação de Design System (em PRs de UI)
+## Validação de UX/UI (em PRs de UI)
 
-Quando o PR afeta UI, execute esta checklist do **Designer**:
+Quando o PR afeta UI, execute esta checklist **stack-agnóstica** do **Designer**.
+Os valores concretos (tokens, componentes, breakpoints) vêm do **design system do
+projeto** (Claude Design handoff ou `./design-system/`) — exija que ele tenha sido
+seguido.
 
-- [ ] **Zero cores hardcoded** — busque por: `bg-\[#`, `text-\[#`, `border-\[#`, `fill-\[#`
-- [ ] **Zero espaçamentos arbitrários** — busque por: `p-\[`, `m-\[`, `gap-\[`, `space-x-\[`, `space-y-\[`
-- [ ] **Sem `transition-all`** — busque por: `transition-all`
-- [ ] **Tokens corretos aplicados** — `bg-bg-base`, `text-primary`, `border-subtle`, `text-secondary`, etc.
-- [ ] **Componentes shadcn/ui** usados em vez de custom quando aplicável
-- [ ] **Ícones via `lucide-react`** — sem font-awesome, material-icons, emojis no lugar de ícones
-- [ ] **`focus-visible:ring-2 ring-accent`** em todos os interativos
-- [ ] **Estados loading/empty/error** implementados
-- [ ] **Responsividade testada** nos breakpoints (375px, 768px, 1280px)
-- [ ] **`aria-label`** em botões só com ícone
-- [ ] **Sem `<div onClick>`** — usar `<button>` com semântica correta
-- [ ] **Contraste WCAG AA** — pares cor/fundo respeitam 4.5:1
+- [ ] **Fidelidade ao design system** — usa os tokens/componentes do design system;
+      zero valores hardcoded que burlam os tokens (cor, espaçamento, raio, sombra,
+      tipografia)
+- [ ] **Escala de espaçamento consistente** — sem números mágicos avulsos
+- [ ] **Estados completos** — default, hover, focus, active, disabled, loading,
+      empty e error implementados
+- [ ] **Responsividade** — funciona nos breakpoints do design system (mobile → desktop)
+- [ ] **Contraste WCAG AA** — pares cor/fundo respeitam 4.5:1 (3:1 para texto grande/ícones)
+- [ ] **`focus-visible`** claro em todos os elementos interativos
+- [ ] **Semântica** — `<button>`/`<a>` corretos; sem `<div>`/`<span>` clicável
+- [ ] **Rótulos acessíveis** — `aria-label` em ações por ícone; `alt` em imagens
+- [ ] **`prefers-reduced-motion`** respeitado
+- [ ] **Ícones de um único conjunto** — sem misturar bibliotecas nem emoji como ícone
 
 Para cada falha, registre um issue como **🔴 BLOCKER** e cite o Designer.
 

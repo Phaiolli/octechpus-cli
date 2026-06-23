@@ -1,4 +1,4 @@
-# 🐙 Octechpus — Agent Orchestrator Reference (v2.1)
+# 🐙 Octechpus — Agent Orchestrator Reference (v2.4)
 
 ## Visão Geral
 
@@ -25,14 +25,27 @@ Profiles ficam em `.octechpus/profiles/` (gerado pelo `init`) e definem:
 
 Profiles disponíveis na instalação:
 - `node-typescript` — Node.js + TypeScript + Vitest + Zod
-- `nextjs-react` — Next.js + React + Tailwind + shadcn/ui (com Designer)
+- `node-javascript` — Node.js puro (JavaScript, sem TypeScript)
+- `nextjs-react` — Next.js + React + Tailwind + shadcn/ui
+- `vue-nuxt` — Vue 3 + Nuxt + Tailwind
+- `react-native` — React Native / Expo (mobile)
 - `python-fastapi` — Python + FastAPI + Pydantic v2 + pytest
 - `python-cli` — Python + Click/Typer + pytest
 - `python-ai-pipeline` — Python + FastAPI + LLMs + workers (com Cost Engineer)
 - `go-api` — Go + chi/stdlib + testify
 - `rust-cli` — Rust + clap + tokio + cargo_test
+- `java-spring` — Java + Spring Boot + JUnit 5
+- `dotnet-api` — C# + ASP.NET Core + xUnit
+- `ruby-rails` — Ruby on Rails + RSpec
+- `php-laravel` — PHP + Laravel + Pest/PHPStan
+- `generic` — fallback agnóstico de stack (use quando nenhum profile específico encaixa)
 
 Herança: `nextjs-react` → `node-typescript` → `_base`. Profiles filhos sobrescrevem e acrescentam aos pais.
+
+> **A partir da v2.4:** o **Designer** é always-on e stack-agnóstico (não traz
+> design system pronto — pede o do Claude Design em runtime) e há um novo agente
+> **Privacy/LGPD** sempre ativo. Apenas o **Cost Engineer** segue opcional (flag
+> `agents.cost_engineer`).
 
 ---
 
@@ -42,11 +55,12 @@ Herança: `nextjs-react` → `node-typescript` → `_base`. Profiles filhos sobr
 ┌──────────────────────────────────────────────────────────────────────┐
 │                         ORCHESTRATOR (Maestro)                        │
 │                                                                        │
-│  Input → GitHub (issue) → Architect → [Designer?] → Coder →          │
-│  Reviewer → QA → Security → [Cost Engineer?] → Docs →                │
+│  Input → GitHub (issue) → Architect → Designer → Coder →             │
+│  Reviewer → QA → Security → Privacy → [Cost Engineer?] → Docs →      │
 │  GitHub (PR) → Reporter → Output                                      │
 │                                                                        │
-│  [Designer] ativo apenas em stacks com agents.designer = true         │
+│  [Designer] always-on, mas só atua em demandas de UI                  │
+│  [Privacy] always-on (framework via compliance.framework)             │
 │  [Cost Engineer] ativo apenas em stacks com agents.cost_engineer = true│
 │  [Feedback loops: qualquer agente pode rejeitar e devolver]           │
 └──────────────────────────────────────────────────────────────────────┘
@@ -54,13 +68,13 @@ Herança: `nextjs-react` → `node-typescript` → `_base`. Profiles filhos sobr
 
 ---
 
-## Os 12 Agentes
+## Os 13 Agentes
 
 ### 1. 🎯 MAESTRO — Orquestrador
 
-Recebe a demanda, classifica o tipo e severidade, seleciona o pipeline correto e garante que todos os agentes executem na ordem correta.
+Recebe a demanda, classifica o tipo e severidade (rubrica explícita), converte em critérios testáveis, seleciona o pipeline e controla os feedback loops (teto de 2 rejeições → escala para humano).
 
-**Prompt:** implícito no `/pipeline`
+**Prompt detalhado:** `.claude/commands/maestro.md`
 
 ---
 
@@ -80,11 +94,14 @@ Analisa o impacto arquitetural, valida padrões da stack ativa e produz o plano 
 
 ---
 
-### 4. 🎨 DESIGNER — Guardião do Design System
+### 4. 🎨 DESIGNER — Guardião de UX/UI
 
-*Ativo apenas em stacks com `agents.designer = true` (ex: `nextjs-react`).*
+*Always-on e stack-agnóstico (a partir da v2.4). Só atua em demandas de UI.*
 
-Lê o design system em `./design-system/` e produz briefing técnico para o Coder. Define componentes shadcn/ui, tokens CSS, estados e checklist para o Reviewer.
+NÃO traz tokens nem design system prontos. Carrega as **regras e melhores práticas
+de UX/UI** (responsividade, acessibilidade WCAG AA, estados completos, consistência)
+e, no processo, **pede o design system do Claude Design** para segui-lo. Produz um
+briefing técnico para o Coder e a checklist para o Reviewer.
 
 **Prompt detalhado:** `.claude/commands/design.md`
 
@@ -116,9 +133,21 @@ Define e implementa a estratégia de testes usando o framework da stack ativa. S
 
 ### 8. 🛡️ SECURITY — Especialista em Segurança
 
-Analisa vulnerabilidades (OWASP Top 10), validação de inputs, autenticação/autorização e exposição de dados sensíveis.
+Analisa vulnerabilidades (OWASP Top 10 **2021** + API Security Top 10 / BOLA/BFLA, SSRF, supply chain), validação de inputs, autenticação/autorização e exposição de dados sensíveis.
 
 **Prompt detalhado:** `.claude/commands/security.md`
+
+---
+
+### 8b. ⚖️ PRIVACY — Conformidade / Proteção de Dados
+
+*Always-on (a partir da v2.4). Framework via `compliance.framework` (`lgpd` por padrão).*
+
+Cuida do uso **legal e legítimo** do dado pessoal: base legal e finalidade,
+minimização, PII em logs/fixtures, direitos do titular, retenção/descarte,
+transferência internacional e necessidade de RIPD/DPIA. Roda após o Security.
+
+**Prompt detalhado:** `.claude/commands/privacy.md`
 
 ---
 
@@ -132,9 +161,9 @@ Documenta código no formato da stack ativa, atualiza README/CHANGELOG e cria AD
 
 ### 10. 📊 REPORTER — Consolidador Final
 
-Gera o relatório final com métricas do pipeline, decisões técnicas, débitos identificados e próximos passos. Inclui o relatório completo no PR description.
+Gera o relatório final com métricas do pipeline, decisões técnicas, débitos e próximos passos. Scorecard com **piso** (Segurança/Privacidade < 4 capa o geral). Inclui o relatório no PR description.
 
-**Prompt:** implícito no `/pipeline` e `/audit`
+**Prompt detalhado:** `.claude/commands/reporter.md`
 
 ---
 
@@ -194,7 +223,12 @@ DESENVOLVEDOR
 └──────────────┬─────────────────────────────────┘
                ▼
 ┌─ SECURITY ─────────────────────────────────────┐
-│  OWASP Top 10 + validação de inputs             │
+│  OWASP 2021 + API Top 10 + validação de inputs  │
+│  ❌ Crítico? → volta ao CODER                  │
+└──────────────┬─────────────────────────────────┘
+               ▼
+┌─ PRIVACY ──────────────────────────────────────┐
+│  Conformidade (LGPD/GDPR) + proteção de dados   │
 │  ❌ Crítico? → volta ao CODER                  │
 └──────────────┬─────────────────────────────────┘
                ▼
@@ -225,13 +259,16 @@ DESENVOLVEDOR
 | Comando | Agente(s) | Descrição |
 |---------|-----------|-----------|
 | `/pipeline [demanda]` | Todos | Pipeline completo |
+| `/maestro [demanda]` | Maestro | Classificação + severidade + roteamento |
 | `/audit [escopo?]` | Todos (modo audit) | Raio-x do projeto |
 | `/architect [escopo]` | Architect | Análise arquitetural |
-| `/design [demanda]` | Designer | Briefing UI (stacks com `agents.designer = true`) |
+| `/design [demanda]` | Designer | Briefing UX/UI (always-on; pede o design system do Claude Design) |
 | `/review [escopo]` | Reviewer | Code review |
 | `/qa [escopo]` | QA | Criar testes |
-| `/security [escopo]` | Security | Audit de segurança |
+| `/security [escopo]` | Security | Audit de segurança (OWASP 2021 + API Top 10) |
+| `/privacy [escopo]` | Privacy | Conformidade / proteção de dados (LGPD/GDPR) |
 | `/docs [escopo]` | Docs | Documentação |
 | `/github-issue [demanda]` | GitHub | Issue + branch |
 | `/profiler` | Profiler | Re-detectar stack e verificar drift |
+| `/reporter [escopo]` | Reporter | Relatório consolidado do pipeline |
 | `/cost [escopo]` | Cost Engineer | Audit de custo (stacks com `agents.cost_engineer = true`) |

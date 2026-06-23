@@ -1,6 +1,8 @@
 extends: python-fastapi
 name: python-ai-pipeline
-description: "Python AI/ML pipeline with LLM orchestration (FastAPI + workers + external providers)"
+description: "Python AI/ML pipeline com LLMs (FastAPI + workers + providers) — Cost Engineer ativo"
+tags: [ai, ml, backend, python, llm]
+when_to_use: "pipelines de IA/LLM em Python (fastapi + anthropic/openai/langchain)"
 
 agents:
   cost_engineer: true

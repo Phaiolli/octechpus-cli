@@ -1,6 +1,8 @@
 extends: python-fastapi
 name: python-cli
 description: "Python CLI tool (Click/Typer + pytest)"
+tags: [cli, python]
+when_to_use: "ferramentas de linha de comando em Python (dep click/typer)"
 
 testing:
   e2e: null

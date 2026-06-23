@@ -1,6 +1,8 @@
 extends: _base
 name: go-api
 description: "Go HTTP API (chi or stdlib + testify)"
+tags: [backend, api, go, systems]
+when_to_use: "APIs/serviços em Go (go.mod)"
 
 language: go
 runtime: "go>=1.21"
@@ -30,7 +32,6 @@ conventions:
   naming: camelCase_functions_PascalCase_exported
 
 agents:
-  designer: false
   cost_engineer: false
 
 forbidden_patterns:
@@ -38,6 +39,11 @@ forbidden_patterns:
   - "_ = err"
   - "fmt\\.Println\\("
   - "interface\\{\\}"
+
+warn_patterns:
+  - "//nolint"
+  - "TODO(?!.*#\\d)"
+  - "context\\.TODO\\(\\)"
 
 guardrails:
   read_only_paths: []

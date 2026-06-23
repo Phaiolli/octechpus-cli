@@ -15,9 +15,15 @@ export function listProfiles() {
       const name = f.replace('.yaml', '')
       try {
         const raw = yamlLoad(readFileSync(join(PROFILES_DIR, f), 'utf-8'))
-        return { name, description: raw.description || '', file: f }
+        return {
+          name,
+          description: raw.description || '',
+          tags: raw.tags || [],
+          when_to_use: raw.when_to_use || '',
+          file: f,
+        }
       } catch {
-        return { name, description: '', file: f }
+        return { name, description: '', tags: [], when_to_use: '', file: f }
       }
     })
 }

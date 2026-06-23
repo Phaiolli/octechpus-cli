@@ -43,6 +43,12 @@ describe('renderTemplate — conditional blocks', () => {
     expect(renderTemplate(tpl, profile)).toBe('')
   })
 
+  it('treats an empty array as falsy (does not render its block)', () => {
+    const tpl = '{{#if stack.warn_patterns}}WARN{{/if}}'
+    expect(renderTemplate(tpl, { ...profile, warn_patterns: [] })).toBe('')
+    expect(renderTemplate(tpl, { ...profile, warn_patterns: ['x'] })).toBe('WARN')
+  })
+
   it('handles nested {{#if}} — outer false removes inner {{/if}} too', () => {
     const tpl = '{{#if stack.agents.cost_engineer}}outer {{#if stack.agents.designer}}inner{{/if}} end{{/if}}rest'
     expect(renderTemplate(tpl, profile)).toBe('rest')

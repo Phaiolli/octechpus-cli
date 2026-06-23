@@ -1,0 +1,61 @@
+extends: _base
+name: node-javascript
+description: "Node.js puro em JavaScript (ESM/CJS) — sem TypeScript (Vitest + JSDoc)"
+tags: [backend, api, cli, javascript, node]
+when_to_use: "projeto Node sem TypeScript (sem tsconfig); CLIs, scripts e serviços em JS"
+
+language: javascript
+runtime: "node>=18"
+package_manager: npm
+
+testing:
+  framework: vitest
+  fixtures: null
+  http_mock: msw
+  e2e: null
+  coverage_target: 75
+
+validation:
+  library: native        # validação própria via if/throw, ou zod se o projeto adotar
+
+docs:
+  format: jsdoc
+  api: openapi
+
+linting:
+  formatter: prettier
+  type_checker: null      # sem tsc — opcionalmente checkJs via jsconfig
+  config: package.json
+
+conventions:
+  imports: relative_with_extension
+  naming: camelCase_functions_PascalCase_classes
+
+agents:
+  cost_engineer: false
+
+forbidden_patterns:
+  - "eval\\("
+  - "JSON\\.parse\\([^)]+\\)(?!.*catch)"
+
+warn_patterns:
+  - "// eslint-disable"
+  - "TODO(?!.*#\\d)"
+
+guardrails:
+  read_only_paths: []
+
+review_checklist: |
+  - Tratamento de erro explícito (try/catch onde pode lançar)
+  - Entradas externas validadas antes do uso
+  - Sem segredo hardcoded; sem PII em log
+  - Imports relativos com extensão explícita (.mjs/.js) quando ESM
+  - Sem código morto, debug statements ou blocos comentados
+  - Funções públicas documentadas em JSDoc
+
+qa_strategy: |
+  - Vitest para testes unitários e de integração
+  - msw para mock de HTTP quando houver chamadas externas
+  - Cobre happy path, error path e edge cases; regressão para cada bug
+  - Sem dado real/PII em fixtures — apenas dados sintéticos
+  - Coverage alvo: 75% no código alterado

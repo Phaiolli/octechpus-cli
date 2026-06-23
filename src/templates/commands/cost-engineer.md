@@ -35,6 +35,16 @@ Após Security, antes de Docs — ativado apenas em stacks com `cost_engineer: t
 - A feature em revisão tem estimativa de custo no PR description
 - Para integrações novas: custo por unidade × volume mensal esperado
 
+### 6. Budget, limites e alertas
+- Há **teto de gasto** (budget) por feature/tenant/período e **kill-switch** quando
+  o limite é atingido — não só estimativa pontual
+- **Token budgeting** por request em pipelines LLM (limite de tokens in/out)
+- Alerta/observabilidade de gasto (métrica + threshold), não descoberta na fatura
+
+### 7. Custo de infraestrutura (além de APIs pagas)
+- Egress/transfer, storage que só cresce sem expurgo, compute ocioso, jobs/cron
+  redundantes, queries caras sem índice/cache
+
 ---
 
 ## Classificação

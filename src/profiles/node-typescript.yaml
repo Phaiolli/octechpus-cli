@@ -1,6 +1,8 @@
 extends: _base
 name: node-typescript
-description: "Node.js + TypeScript projects (Vitest + Zod + JSDoc)"
+description: "Node.js + TypeScript (Vitest + Zod + TSDoc)"
+tags: [backend, api, cli, typescript, node]
+when_to_use: "serviços/CLIs/libs em Node com TypeScript (tsconfig ou dep typescript)"
 
 language: typescript
 runtime: "node>=18"
@@ -30,7 +32,6 @@ conventions:
   naming: camelCase_functions_PascalCase_classes
 
 agents:
-  designer: false
   cost_engineer: false
 
 design_system:
@@ -43,6 +44,12 @@ forbidden_patterns:
   - "// @ts-ignore"
   - "<div onClick"
   - "JSON\\.parse\\([^)]+\\)(?!.*catch)"
+
+warn_patterns:
+  - "// eslint-disable"
+  - "@ts-expect-error"
+  - "as unknown"
+  - "TODO(?!.*#\\d)"
 
 guardrails:
   read_only_paths: []

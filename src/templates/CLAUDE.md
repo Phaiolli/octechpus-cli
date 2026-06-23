@@ -28,17 +28,22 @@
 | `/architect [escopo]` | Análise arquitetural |
 | `/review [escopo]` | Code review |
 | `/qa [escopo]` | Criar testes |
-| `/security [escopo]` | Audit de segurança |
+| `/security [escopo]` | Audit de segurança (OWASP 2021 + API Top 10) |
+| `/privacy [escopo]` | Conformidade / proteção de dados ({{stack.compliance.framework}}) |
 | `/docs [escopo]` | Documentação |
 | `/github-issue [demanda]` | Gestão GitHub |
-{{#if stack.agents.designer}}| `/design [demanda]` | Briefing de design system (Designer agent) |
-{{/if}}{{#if stack.agents.cost_engineer}}| `/cost [escopo]` | Análise de custo operacional |
+| `/design [demanda]` | Briefing de UX/UI (Designer agent) |
+{{#if stack.agents.cost_engineer}}| `/cost [escopo]` | Análise de custo operacional |
 {{/if}}
 ## Pipeline
 
 ```
-Maestro → GitHub → Architect → {{#if stack.agents.designer}}Designer → {{/if}}Coder → Reviewer → QA → Security → {{#if stack.agents.cost_engineer}}Cost Engineer → {{/if}}Docs → GitHub (PR) → Reporter
+Maestro → GitHub → Architect → Designer → Coder → Reviewer → QA → Security → Privacy → {{#if stack.agents.cost_engineer}}Cost Engineer → {{/if}}Docs → GitHub (PR) → Reporter
 ```
+
+> O **Designer** é stack-agnóstico: não traz tokens prontos — ele aplica as
+> melhores práticas de UX/UI e pede o **design system do Claude Design** durante o
+> processo. Só atua em demandas de UI.
 
 ## Regras universais
 
@@ -124,7 +129,16 @@ Os seguintes padrões NÃO devem aparecer no código deste projeto:
 - `{{this}}`
 {{/each}}
 
-Reviewer rejeita PRs que contenham qualquer um deles automaticamente.
+Reviewer rejeita PRs que contenham qualquer um deles automaticamente (🔴 BLOCKER).
+{{#if stack.warn_patterns}}
+### Padrões desencorajados (🟡 WARNING)
+
+Não bloqueiam, mas o Reviewer sinaliza — use só com justificativa:
+
+{{#each stack.warn_patterns}}
+- `{{this}}`
+{{/each}}
+{{/if}}
 
 {{#if stack.guardrails.read_only_paths}}
 ### Pastas com Guardrail (read-only sem aprovação)
@@ -138,10 +152,19 @@ Os seguintes paths são protegidos — modificá-los exige label específico no 
 
 ## Segurança
 
-- OWASP Top 10 checklist obrigatório
-- Secrets nunca hardcoded
+- OWASP Top 10 (2021) + API Security Top 10 (BOLA/BFLA) obrigatórios
+- Secrets nunca hardcoded; dependências auditadas (supply chain)
 - Rate limiting em endpoints públicos
 - Input validation com **{{stack.validation.library}}** em TODAS as entradas
+
+## Privacidade / Conformidade ({{stack.compliance.framework}})
+
+- Todo tratamento de **dado pessoal** tem base legal e finalidade declaradas
+- **Minimização:** coletar só o necessário
+- **Zero PII** em logs, telemetria e fixtures (dado de teste é sintético)
+- Direitos do titular (acesso, correção, eliminação, portabilidade) viáveis
+- Retenção com prazo definido; transferência internacional com salvaguarda
+- RIPD/DPIA para tratamento de alto risco
 
 ## Referência dos Agentes
 

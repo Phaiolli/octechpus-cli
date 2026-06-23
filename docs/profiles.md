@@ -16,15 +16,35 @@ A profile is a YAML file in `src/profiles/` that describes a specific language/f
 
 ## Inheritance
 
-Profiles use single inheritance via the `extends` key. The profile-loader deep-merges parent into child (child wins on key conflicts, arrays are replaced, not merged).
+Profiles use single inheritance via the `extends` key. The profile-loader deep-merges parent into child (child wins on scalar conflicts).
+
+**Arrays are concatenated** (`parent ++ child`), not replaced. To replace a parent
+array instead of extending it, make the child array's **first element** the sentinel
+`"!override"` — everything after it becomes the new value:
+
+```yaml
+forbidden_patterns:
+  - "!override"          # discard the inherited list
+  - "console\\.log\\("   # ...and use only what follows
+```
 
 ```
 _base.yaml                    (required root — do not extend anything else)
   ├── python-fastapi.yaml
   │     ├── python-ai-pipeline.yaml
   │     └── python-cli.yaml
-  └── node-typescript.yaml
-        └── nextjs-react.yaml
+  ├── node-typescript.yaml
+  │     ├── nextjs-react.yaml
+  │     ├── vue-nuxt.yaml
+  │     └── react-native.yaml
+  ├── node-javascript.yaml
+  ├── java-spring.yaml
+  ├── dotnet-api.yaml
+  ├── ruby-rails.yaml
+  ├── php-laravel.yaml
+  ├── go-api.yaml
+  ├── rust-cli.yaml
+  └── generic.yaml            (stack-agnostic fallback)
 ```
 
 When you run `octechpus profile show <name>`, you see the fully resolved profile after all inheritance is applied.
@@ -40,6 +60,8 @@ When you run `octechpus profile show <name>`, you see the fully resolved profile
 | `extends` | string | No | Parent profile name (filename without `.yaml`) |
 | `name` | string | Yes | Unique identifier, matches filename |
 | `description` | string | Yes | One-line description shown in `profile list` |
+| `tags` | string[] | No | Categories for selection (e.g. `[backend, api, python]`) |
+| `when_to_use` | string | No | One-line "use this when…" hint shown in `init`/`profile list` |
 | `language` | string | Yes | Primary language (`python`, `typescript`, `go`, `rust`, …) |
 | `runtime` | string | Yes | Runtime version constraint (`python>=3.12`, `node>=18`, …) |
 | `package_manager` | string | Yes | `uv`, `npm`, `cargo`, `go_modules`, … |
@@ -57,12 +79,17 @@ agents:
   reviewer: true
   qa: true
   security: true
+  privacy: true        # always-on (since v2.4) — LGPD/GDPR compliance
   docs: true
   reporter: true
   profiler: true
-  designer: false      # activate in UI profiles
+  designer: true       # always-on (since v2.4) — stack-agnostic UX/UI guardian
   cost_engineer: false # activate in AI/ML profiles
 ```
+
+> Since v2.4, **Designer** and **Privacy** default to `true` in `_base.yaml`.
+> Designer only acts on UI demands and ships no prebuilt design system (it requests
+> the Claude Design design system at runtime). Only **Cost Engineer** is opt-in.
 
 ### `testing` block
 
@@ -116,6 +143,29 @@ forbidden_patterns:
   - "import \\*"
   - "except Exception:\\s*pass"
   - "print\\("
+```
+
+### `warn_patterns`
+
+Same shape as `forbidden_patterns`, but matches are 🟡 **WARNING** (flagged, not
+blocking) instead of 🔴 BLOCKER. Use for discouraged-but-sometimes-justified
+patterns. Concatenated through inheritance like any array. Defaults to `[]` in `_base`.
+
+```yaml
+warn_patterns:
+  - "// eslint-disable"
+  - "TODO(?!.*#\\d)"
+```
+
+### `compliance` block
+
+Drives the Privacy/LGPD agent. Defined in `_base.yaml`; override per profile if needed.
+
+```yaml
+compliance:
+  framework: lgpd          # lgpd | gdpr | lgpd_gdpr | none
+  privacy_review_required: true
+  pii_in_logs: forbidden
 ```
 
 ### `guardrails` block

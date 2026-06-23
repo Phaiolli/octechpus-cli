@@ -12,10 +12,11 @@ agents:
   reviewer: true
   qa: true
   security: true
+  privacy: true        # always-on — data protection / LGPD-GDPR
   docs: true
   reporter: true
   profiler: true
-  designer: false
+  designer: true       # always-on — stack-agnostic UX/UI guardian (no prebuilt design system)
   cost_engineer: false
 
 # ── Pipeline ─────────────────────────────────────────────────────────────────
@@ -36,14 +37,28 @@ documentation:
   changelog_format: keep_a_changelog
   readme_required: true
 
+# ── Code patterns ─────────────────────────────────────────────────────────────
+# Two severity tiers checked by the Reviewer:
+#   forbidden_patterns → 🔴 BLOCKER (auto-reject)   — defined per concrete profile
+#   warn_patterns      → 🟡 WARNING (flag, não bloqueia)
+# Arrays are replaced (not merged) on inheritance, so a profile can drop/retune them.
+warn_patterns: []
+
 # ── Design System ─────────────────────────────────────────────────────────────
 design_system:
   tokens: none   # none | css-only | tailwind
 
 # ── Security ──────────────────────────────────────────────────────────────────
 security:
-  owasp_top_10: true
+  owasp_top_10: true       # OWASP Top 10 (2021) + API Security Top 10
   secret_scanning: true
+  supply_chain: true       # dependency audit / SBOM / pinned versions
+
+# ── Privacy / Compliance ──────────────────────────────────────────────────────
+compliance:
+  framework: lgpd          # lgpd | gdpr | lgpd_gdpr | none
+  privacy_review_required: true
+  pii_in_logs: forbidden   # PII must never reach logs/telemetry/fixtures
 
 # ── Required placeholders ─────────────────────────────────────────────────────
 # Concrete profiles MUST fill all of these. init fails if any is missing.

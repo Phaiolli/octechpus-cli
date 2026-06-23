@@ -1,0 +1,64 @@
+extends: _base
+name: ruby-rails
+description: "Ruby on Rails (RSpec + FactoryBot + RuboCop)"
+tags: [backend, api, web, ruby, rails]
+when_to_use: "aplicações Rails (Gemfile com rails)"
+
+language: ruby
+runtime: "ruby>=3.2"
+package_manager: bundler
+
+testing:
+  framework: rspec
+  fixtures: factory_bot
+  http_mock: webmock
+  e2e: capybara
+  coverage_target: 85
+
+validation:
+  library: active_record_validations
+
+docs:
+  format: yard
+  api: null
+
+linting:
+  formatter: rubocop
+  type_checker: null          # opcional via Sorbet/RBS
+  config: .rubocop.yml
+
+conventions:
+  imports: autoload
+  naming: snake_case_methods_PascalCase_classes
+
+agents:
+  cost_engineer: false
+
+forbidden_patterns:
+  - "binding\\.pry"
+  - "puts "
+  - "rescue Exception"
+  - "save\\(validate: false\\)"
+
+warn_patterns:
+  - "rubocop:disable"
+  - "TODO(?!.*#\\d)"
+  - "\\.update_all\\("          # ignora validações/callbacks
+
+guardrails:
+  read_only_paths: []
+
+review_checklist: |
+  - Validações no model (ActiveRecord) para toda entrada externa
+  - Sem N+1 (use includes/preload); índices nas FKs consultadas
+  - Strong parameters em controllers; sem mass assignment
+  - rescue específico (nunca rescue Exception); logger em vez de puts
+  - Mass updates (update_all/delete_all) revisados — pulam callbacks/validações
+  - Migrações reversíveis (up/down ou change seguro)
+
+qa_strategy: |
+  - RSpec para model/request/system specs
+  - FactoryBot para dados de teste; WebMock para HTTP externo
+  - Capybara para fluxos E2E críticos
+  - Cobre happy/error/edge + negativos de autorização (Pundit/CanCan)
+  - Sem dado real/PII em factories; SimpleCov para cobertura; alvo 85%
