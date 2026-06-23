@@ -109,6 +109,24 @@ describe('init generates scoped .claude/agents/', () => {
     expect(fm).toContain('Bash')
   })
 
+  it('does not leak the $ARGUMENTS slash-command placeholder', () => {
+    tmpDir = makeTmpDir()
+    runCLI(['init', '--stack=node-javascript'], { cwd: tmpDir })
+    for (const name of ['coder', 'security', 'reviewer', 'docs']) {
+      const content = readFileSync(join(tmpDir, '.claude', 'agents', `${name}.md`), 'utf-8')
+      expect(content).not.toContain('$ARGUMENTS')
+    }
+  })
+
+  it('embeds the anti prompt-injection guard in every subagent', () => {
+    tmpDir = makeTmpDir()
+    runCLI(['init', '--stack=node-javascript'], { cwd: tmpDir })
+    const dir = join(tmpDir, '.claude', 'agents')
+    for (const f of readdirSync(dir).filter(n => n.endsWith('.md'))) {
+      expect(readFileSync(join(dir, f), 'utf-8')).toContain('Segurança de execução')
+    }
+  })
+
   it('applies model tiering (opus for security, haiku for docs)', () => {
     tmpDir = makeTmpDir()
     runCLI(['init', '--stack=node-javascript'], { cwd: tmpDir })

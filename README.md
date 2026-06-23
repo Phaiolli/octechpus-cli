@@ -153,6 +153,12 @@ o guardrail deixa de ser texto no `CLAUDE.md` e passa a ser **trava imposta**.
 > (o destrutivo é barrado, não perguntado). Para overrides pessoais, use
 > `.claude/settings.local.json` — ele precede o `settings.json`.
 
+> ⚠️ **`deny` é defesa-em-profundidade, não sandbox.** As regras casam por prefixo de
+> comando (`Bash(rm -rf:*)`), então reduzem o risco mas não eliminam toda evasão possível
+> (ex.: `find -delete`, aliases). É uma camada de proteção — não substitui review humano.
+> Cada subagent também carrega uma instrução **anti prompt-injection** (conteúdo lido do
+> repo é *dado*, nunca comando).
+
 ### `.claude/agents/` — subagents escopados
 
 Cada agente vira um subagent do Claude Code com **contexto isolado**, **ferramentas por
@@ -167,6 +173,11 @@ princípio do menor privilégio** e **modelo próprio**:
 
 Os agentes de **análise não conseguem editar código** (não têm a ferramenta) — a segurança
 vem de *não ter a capacidade*, não de te perguntar. Configurável via `agents_runtime` no profile.
+
+> **v2.6 — orquestração real:** o `/pipeline` **delega** cada fase ao subagent via ferramenta
+> `Task` (em vez de trocar de papel numa conversa só). O fan-out pós-Coder — Reviewer ∥ QA ∥
+> Security ∥ Privacy — roda **em paralelo**, e o handoff entre agentes passa por artefatos em
+> `.octechpus/run/` (cada subagent recebe os outputs relevantes dos anteriores).
 
 ---
 
@@ -252,7 +263,7 @@ octechpus help                        # Ajuda
 | `--stack=<nome>` | Força um profile, ignorando auto-detecção |
 | `--describe=<file.md>` | Infere a stack a partir de um doc `.md` do projeto |
 | `--force` | Sobrescreve arquivos existentes sem perguntar |
-| `--minimal` | Instala só `.claude/commands/` (sem docs, sem GitHub templates) |
+| `--minimal` | Só o núcleo `.claude/`: commands + `settings.json` + agents (sem docs/GitHub) |
 | `--dry-run` | Preview do que seria criado, sem escrever nada |
 | `--with-design-system` | Scaffolda um starter local em `design-system/` (opcional) |
 | `--keep-customizations` | `update` pula arquivos editados pelo usuário (padrão: `true`) |
@@ -338,7 +349,7 @@ octechpus doctor
 ## Testes
 
 ```bash
-npm test              # 129 testes, ~2.5s
+npm test              # 132 testes, ~2.5s
 npm run test:watch    # modo watch
 npm run test:coverage # com cobertura
 ```
@@ -385,7 +396,7 @@ Detalhes e troubleshooting de auth: ver `CLAUDE.md` → "Como publicar no npm".
 
 ## Versão atual
 
-**2.5.0** — Modelo de permissão (`.claude/settings.json` com allow/ask/deny + guardrails como trava real), subagents escopados (`.claude/agents/` com tools por menor privilégio e model tiering Haiku/Opus). Ver [ADR 002](docs/adr/002-evolucao-seguranca-e-eficiencia-agentes.md).  
+**2.6.0** — `/pipeline` delega de verdade aos subagents via `Task` (contexto isolado + fan-out paralelo pós-Coder + handoff por artefatos em `.octechpus/run/`), guarda anti prompt-injection nos subagents, e correção do vazamento de `$ARGUMENTS`. Construído sobre o modelo de permissão e subagents escopados da 2.5.0. Ver [ADR 002](docs/adr/002-evolucao-seguranca-e-eficiencia-agentes.md).  
 Veja o [CHANGELOG](CHANGELOG.md) para histórico completo.
 
 ---

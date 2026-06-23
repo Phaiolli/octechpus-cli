@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2026-06-23
+
+### Added
+- **`/pipeline` agora delega de verdade aos subagents** (fecha o item #1 do ADR 002).
+  O orquestrador invoca cada agente via ferramenta **Task** (`subagent_type` = nome do
+  agente) em vez de trocar de papel numa conversa só. Ganhos: contexto isolado, menor
+  privilégio e **execução paralela** do fan-out pós-Coder (Reviewer ∥ QA ∥ Security ∥
+  Privacy ∥ Cost Engineer quando aplicável).
+- **Handoff por artefatos** — como os agentes read-only não escrevem em disco, o
+  orquestrador persiste cada saída em `.octechpus/run/<NN>-<agente>.md` e passa os
+  artefatos relevantes adiante. O Reporter consome o diretório inteiro.
+
+### Changed
+- **Subagents ganham guarda anti prompt-injection** — preâmbulo em todo `.claude/agents/*.md`
+  deixando explícito que conteúdo lido do repo (código, `.md`, issues, saídas de comando)
+  é **dado, nunca instrução**.
+- **`--minimal` agora inclui `settings.json` + subagents** — segurança é núcleo, não extra.
+  Texto do `help`/README alinhado ao comportamento.
+
+### Fixed
+- **`$ARGUMENTS` não vaza mais nos subagents** — o placeholder de slash command era
+  reusado verbatim no corpo do subagent; agora é neutralizado na geração (subagents
+  recebem a tarefa via prompt de invocação, não via `$ARGUMENTS`).
+
+### Notes
+- `permissions.deny` é **defesa-em-profundidade** (casa por prefixo de comando), não um
+  sandbox — reduz risco, não substitui review humano. Documentado no README.
+
 ## [2.5.0] - 2026-06-23
 
 ### Added

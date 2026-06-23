@@ -1,7 +1,7 @@
 # 002. Evolução de Segurança e Eficiência do Sistema de Agentes
 
 **Data:** 2026-06-23
-**Status:** Accepted (Fases 1–3 implementadas na v2.5.0)
+**Status:** Accepted (Fases 1–3 + integridade na v2.5.0; orquestração real na v2.6.0)
 
 ## Contexto
 
@@ -143,3 +143,24 @@ Decisões tomadas na implementação, refinando o plano original:
   arquivos respeitando a mesma lógica de customização (hash SHA-256 no manifest) dos
   commands. Nenhum profile precisou de campo obrigatório novo (`required_placeholders`
   inalterado), então todos os profiles continuam válidos.
+
+## Notas de implementação (v2.6.0)
+
+A v2.5.0 entregou os subagents escopados mas o `/pipeline` ainda não os usava. A v2.6.0
+fecha isso e resolve as questões em aberto #2 e #4:
+
+- **Orquestração real (Q#1 do plano original).** O `pipeline.md` foi reescrito: o
+  orquestrador **delega** cada fase ao subagent via ferramenta `Task`
+  (`subagent_type` = nome do agente) em vez de trocar de papel numa conversa só.
+- **Formato do handoff (Q#2 resolvida).** Artefatos em `.octechpus/run/<NN>-<agente>.md`.
+  Como os agentes read-only não escrevem em disco, **quem persiste é o orquestrador**
+  (que tem escrita), a partir do valor de retorno de cada subagent — respeitando o
+  menor privilégio. O Reporter consome o diretório inteiro.
+- **Paralelismo.** O fan-out pós-Coder (Reviewer ∥ QA ∥ Security ∥ Privacy ∥ Cost
+  Engineer) roda concorrente; o gate agrega blockers e reitera (teto de 2).
+- **Coexistência (Q#4 resolvida).** Sem bump major: os `.claude/commands/` seguem como
+  pontos de entrada; o `/pipeline` apenas passa a delegar aos subagents.
+- **Hardening anti prompt-injection.** Preâmbulo padrão injetado em todo subagent
+  (conteúdo do repo é dado, não comando) — item da Fase 1 que ficara pendente.
+- **Correção.** O placeholder `$ARGUMENTS` (sintaxe de slash command) deixou de vazar no
+  corpo dos subagents — é neutralizado na geração.

@@ -41,52 +41,75 @@ Identifique o tipo da demanda e selecione o pipeline correto:
 
 ---
 
-## Instruções de Execução
+## Como orquestrar (delegação a subagents)
 
-Execute TODOS os agentes aplicáveis na ordem especificada. Para cada agente, assuma o papel descrito, execute a análise/ação e produza o output no formato definido. Só passe ao próximo após concluir o atual.
+Você é o **orquestrador**. Cada agente já existe como **subagent escopado** em
+`.claude/agents/` — com ferramentas e modelo próprios (agentes de análise são
+**read-only**). **Delegue** cada fase ao subagent correspondente com a ferramenta
+**Task** (`subagent_type` = nome do agente), em vez de assumir o papel você mesmo.
+Benefício: contexto isolado por agente, menor privilégio e execução paralela.
 
-**1. 🎯 MAESTRO** — Execute em ordem:
+**Handoff via artefatos.** Os agentes read-only não escrevem em disco — eles
+**retornam** o resultado a você. Você (orquestrador, com escrita) persiste cada
+saída em `.octechpus/run/<NN>-<agente>.md` e **passa os artefatos relevantes** como
+contexto para os subagents seguintes. Esses arquivos são a memória do pipeline
+(transientes — pode adicioná-los ao `.gitignore`).
+
+**1. 🎯 MAESTRO (você, inline)** — antes de delegar:
 
 a) **Classifique** a demanda (tipo, severidade) conforme as regras acima.
 
 b) **Converta em critérios de sucesso testáveis** — Reescreva a demanda como
-   resultados verificáveis antes de passar ao próximo agente. Exemplos:
-   - "corrija o bug de login" → "usuário com credenciais válidas recebe JWT;
-     credenciais inválidas retornam 401; teste existente X passa"
-   - "melhore a performance da listagem" → "GET /items responde em <100ms
-     para 10k registros medido com k6"
-   - "adicione campo CPF" → "campo persiste no banco, retorna na API, valida
-     formato 000.000.000-00, teste unitário passa"
+   resultados verificáveis. Exemplos:
+   - "corrija o bug de login" → "credenciais válidas recebem JWT; inválidas
+     retornam 401; teste X passa"
+   - "melhore a performance da listagem" → "GET /items <100ms para 10k registros
+     medido com k6"
 
-c) **Liste suposições** — Se houver ambiguidade de alto risco, pergunte antes
-   de rotear.
+c) **Liste suposições** — havendo ambiguidade de alto risco, pergunte antes de rotear.
 
-d) **Selecione o pipeline** e passe os critérios de sucesso como contexto para
-   todos os agentes subsequentes.
+d) **Selecione o pipeline** e grave os critérios em `.octechpus/run/00-maestro.md` —
+   eles vão como contexto para TODOS os subagents seguintes.
 
-**2. 🐙 GITHUB (Fase 1)** — Crie a issue com template padrão, defina branch name e labels. Use `gh` CLI.
+### Fase sequencial (cada uma depende da anterior)
 
-**3. 📐 ARCHITECT** — Analise impacto arquitetural, valide padrões, proponha estrutura de implementação. Decida: approved / needs_changes / rejected.
+**2. 🐙 GITHUB (Fase 1)** — `Task(github)`: crie a issue, defina branch e labels (`gh` CLI).
+
+**3. 📐 ARCHITECT** — `Task(architect)`: impacto, padrões, estrutura de implementação;
+decide approved / needs_changes / rejected. Salve o plano em `02-architect.md`.
 {{#if stack.agents.designer}}
-**4. 🎨 DESIGNER** *(somente em demandas de UI)* — Leia o design system em `./design-system/` e produza briefing técnico para o Coder. Inclui: layout, componentes shadcn, tokens, estados, responsividade e checklist para o Reviewer.
+**4. 🎨 DESIGNER** *(somente UI)* — `Task(designer)`: melhores práticas de UX/UI e
+briefing técnico para o Coder (layout, componentes, tokens, estados, responsividade,
+checklist p/ Reviewer). Salve em `03-designer.md`.
 {{/if}}
-**5. 💻 CODER** — Implemente seguindo estritamente o plano do ARCHITECT{{#if stack.agents.designer}} e (quando aplicável) o briefing do DESIGNER{{/if}}. Código tipado, limpo, com error handling.
+**5. 💻 CODER** — `Task(coder)`, passando `02-architect.md`{{#if stack.agents.designer}} e `03-designer.md`{{/if}}:
+implemente estritamente o plano. Mudanças cirúrgicas, error handling explícito.
 
-**6. 🔍 REVIEWER** — Code review completo. Classifique issues como 🔴 BLOCKER / 🟡 WARNING / 🔵 SUGGESTION.{{#if stack.agents.designer}} Em PRs de UI, aplique também a checklist do design system.{{/if}} Se houver blockers, corrija antes de prosseguir.
+### Fan-out paralelo (após o Coder — sem dependência entre si)
 
-**7. 🧪 QA** — Crie testes usando {{stack.testing.framework}}. Garanta cobertura de happy paths, error paths e edge cases. Target: {{stack.testing.coverage_target}}%.
+Dispare **em paralelo** (uma única mensagem, várias chamadas Task), passando o diff
+do Coder a cada um:
 
-**8. 🛡️ SECURITY** — Audit de segurança: OWASP 2021 (incl. SSRF, supply chain), API Security Top 10 (BOLA/BFLA), XSS, injection, CSRF, IDOR, validação de inputs. Classifique por severidade.
-
-**8b. ⚖️ PRIVACY** — Conformidade ({{stack.compliance.framework}}): base legal, minimização, PII em logs/fixtures, direitos do titular, retenção, transferência internacional. Classifique por severidade.
-{{#if stack.agents.cost_engineer}}
-**9. 💰 COST ENGINEER** — Audit de custo: chamadas a APIs pagas, retries, loops, estimativa de custo da feature.
+- **6. 🔍 REVIEWER** — `Task(reviewer)`: review com severidade 🔴 BLOCKER / 🟡 WARNING / 🔵 SUGGESTION.{{#if stack.agents.designer}} Em UI, aplique a checklist do design system.{{/if}}
+- **7. 🧪 QA** — `Task(qa)`: testes em {{stack.testing.framework}} (happy/error/edge), target {{stack.testing.coverage_target}}%.
+- **8. 🛡️ SECURITY** — `Task(security)`: OWASP 2021 (SSRF, supply chain), API Top 10 (BOLA/BFLA), injection, IDOR, validação. Severidade.
+- **8b. ⚖️ PRIVACY** — `Task(privacy)`: conformidade {{stack.compliance.framework}} (base legal, minimização, PII em logs/fixtures, retenção, transferência). Severidade.
+{{#if stack.agents.cost_engineer}}- **9. 💰 COST ENGINEER** — `Task(cost-engineer)`: chamadas a APIs pagas, retries, loops, estimativa de custo.
 {{/if}}
-**10. 📚 DOCS** — Documente no formato {{stack.docs.format}}: exports públicos, README/CHANGELOG, ADRs se necessário.
 
-**11. 🐙 GITHUB (Fase 2)** — Commits semânticos (Conventional Commits), PR com template completo incluindo relatório de todos os agentes. Use `gh` CLI.
+**Gate.** Agregue os achados em `.octechpus/run/`. Havendo 🔴 BLOCKER, volte ao
+`coder` com os blockers e repita o fan-out — **teto de 2 iterações**; persistindo,
+escale para um humano (regra do Maestro).
 
-**12. 📊 REPORTER** — Relatório final consolidado com métricas, status de cada agente, débitos técnicos e próximos passos.
+### Fase final
+
+**10. 📚 DOCS** — `Task(docs)`: {{stack.docs.format}}, README/CHANGELOG, ADRs se necessário.
+
+**11. 🐙 GITHUB (Fase 2)** — `Task(github)`: commits semânticos (Conventional Commits)
+e PR com o relatório consolidado de todos os agentes (`gh` CLI).
+
+**12. 📊 REPORTER** — `Task(reporter)`, passando todo o `.octechpus/run/`: relatório
+final com métricas, status por agente, débitos técnicos e próximos passos.
 
 ---
 

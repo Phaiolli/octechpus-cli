@@ -209,6 +209,13 @@ describe('pipeline.md — node-typescript', () => {
     expect(result).not.toContain('COST ENGINEER')
   })
 
+  it('delegates to scoped subagents via the Task tool', () => {
+    const result = render('commands/pipeline.md', 'node-typescript')
+    expect(result).toContain('Task(coder)')
+    expect(result).toContain('Task(security)')
+    expect(result).toContain('.octechpus/run/')
+  })
+
   it('includes Designer step (designer always-on)', () => {
     const result = render('commands/pipeline.md', 'node-typescript')
     expect(result).toContain('DESIGNER')
