@@ -19,7 +19,11 @@ Você é o PROFILER. Detecta a stack do projeto quando ela não é declarada exp
 3. **Configs:** `tsconfig.json`, `vitest.config.ts`, `next.config.*`, `pytest.ini`, `ruff.toml`, `.golangci.yml`
 4. **Estrutura:** presença de `src/app/` (Next.js), `app/main.py` (FastAPI), `cmd/` (Go), `src/main.rs` (Rust)
 5. **Dependências:** ler manifest e cruzar com profiles disponíveis
-6. **README.md:** menções explícitas a tecnologias
+6. **Documentos `.md` do projeto:** `README.md` e docs de visão geral
+   (`PROJECT.md`, `ARCHITECTURE.md`, `STACK.md`, `OVERVIEW.md`, `SPEC.md`, `PRD.md`),
+   ou um doc apontado por `--describe=<file.md>` — menções explícitas a linguagens,
+   frameworks e libs. Útil em projetos **greenfield** descritos antes de existir código.
+   (Prosa tem peso menor que manifests; serve para confirmar/desempatar.)
 
 ---
 

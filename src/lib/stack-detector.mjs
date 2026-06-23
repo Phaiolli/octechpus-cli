@@ -1,8 +1,91 @@
 import { existsSync, readFileSync, readdirSync } from 'fs'
-import { join } from 'path'
+import { join, isAbsolute } from 'path'
 
 function readJson(filepath) {
   try { return JSON.parse(readFileSync(filepath, 'utf-8')) } catch { return null }
+}
+
+// Collects text from project-overview markdown docs (README and similar), plus an
+// optional explicit doc, lowercased into a single blob for keyword scanning.
+function collectMarkdown(projectDir, describeFile) {
+  const blobs = []
+  const seen = new Set()
+  const add = (full) => {
+    if (!full || seen.has(full)) return
+    seen.add(full)
+    const t = readText(full)
+    if (t) blobs.push(t)
+  }
+  if (describeFile) add(isAbsolute(describeFile) ? describeFile : join(projectDir, describeFile))
+  try {
+    const overview = /^(readme|project|architecture|stack|about|overview|spec|prd)\.md$/i
+    for (const f of readdirSync(projectDir)) {
+      if (overview.test(f)) add(join(projectDir, f))
+    }
+  } catch { /* unreadable dir */ }
+  return blobs.join('\n').toLowerCase()
+}
+
+// Scores profiles from the prose of a project-description markdown document.
+// Weights are moderate: a single clear framework mention reaches "medium"
+// (asks for confirmation); rich descriptions can reach "high".
+function scoreMarkdown(candidates, blob) {
+  if (!blob) return
+  const has = (re) => re.test(blob)
+  const m = (name, pts, label) => score(candidates, name, pts, `${label} (doc .md)`)
+  const hasTs = has(/\btypescript\b/)
+
+  // ── Frontend / Node ──────────────────────────────────────────────────────
+  if (has(/next\.?js/)) {
+    m('nextjs-react', 26, 'next.js')
+    m('node-typescript', -8, 'next downgrade'); m('node-javascript', -8, 'next downgrade')
+  } else if (has(/\bnuxt\b/)) {
+    m('vue-nuxt', 26, 'nuxt')
+    m('node-typescript', -8, 'nuxt downgrade'); m('node-javascript', -8, 'nuxt downgrade')
+  } else if (has(/react[ -]native/) || has(/\bexpo\b/)) {
+    m('react-native', 26, 'react native')
+    m('node-typescript', -8, 'react-native downgrade'); m('node-javascript', -8, 'react-native downgrade')
+  } else if (has(/\bvue(\.js)?\b/)) {
+    m('vue-nuxt', 16, 'vue')
+  } else if (has(/\breact\b/)) {
+    m('nextjs-react', 12, 'react')
+  }
+  if (has(/tailwind/)) m('nextjs-react', 4, 'tailwind')
+  if (has(/shadcn/)) m('nextjs-react', 6, 'shadcn')
+
+  if (has(/\bnest(\.?js)?\b/)) m('node-typescript', 18, 'nestjs')
+  if (has(/\bexpress\b/) || has(/\bfastify\b/) || has(/\bkoa\b/)) {
+    m(hasTs ? 'node-typescript' : 'node-javascript', 14, 'express/fastify/koa')
+  }
+  if (hasTs && !has(/next\.?js/) && !has(/\bnuxt\b/)) m('node-typescript', 14, 'typescript')
+  if (!hasTs && (has(/\bnode\.?js\b/) || has(/\bjavascript\b/))) m('node-javascript', 14, 'node/javascript sem typescript')
+
+  // ── Python ───────────────────────────────────────────────────────────────
+  if (has(/\bfastapi\b/)) m('python-fastapi', 26, 'fastapi')
+  if (has(/\bpydantic\b/)) m('python-fastapi', 8, 'pydantic')
+  if (has(/\buvicorn\b/)) m('python-fastapi', 6, 'uvicorn')
+  if (has(/\bclick\b/) || has(/\btyper\b/)) {
+    m('python-cli', 22, 'click/typer'); m('python-fastapi', -8, 'cli downgrade')
+  }
+  if (has(/\blangchain\b/) || has(/\banthropic\b/) || has(/\bopenai\b/) || has(/\bllms?\b/)) {
+    m('python-ai-pipeline', 24, 'LLM library')
+    if (has(/\bfastapi\b/)) m('python-ai-pipeline', 16, 'fastapi + LLM')
+  }
+
+  // ── Go / Rust ─────────────────────────────────────────────────────────────
+  if (has(/\bgolang\b/) || has(/go modules/) || has(/\bgin\b/) || has(/chi router/)) m('go-api', 24, 'go')
+  if (has(/\brust\b/) || has(/\bcargo\b/) || has(/\btokio\b/) || has(/\bclap\b/)) m('rust-cli', 22, 'rust')
+
+  // ── Java / .NET ───────────────────────────────────────────────────────────
+  if (has(/spring boot/) || has(/\bspring\b/)) m('java-spring', 24, 'spring')
+  else if (has(/\bjava\b/)) m('java-spring', 10, 'java')
+  if (has(/asp\.?net/) || has(/\.net\b/) || has(/\bc#/) || has(/\bcsharp\b/)) m('dotnet-api', 24, '.net/c#')
+
+  // ── Ruby / PHP ────────────────────────────────────────────────────────────
+  if (has(/ruby on rails/) || has(/\brails\b/)) m('ruby-rails', 24, 'rails')
+  else if (has(/\bruby\b/)) m('ruby-rails', 10, 'ruby')
+  if (has(/\blaravel\b/)) m('php-laravel', 24, 'laravel')
+  else if (has(/\bphp\b/)) m('php-laravel', 12, 'php')
 }
 
 // Returns the name of the first top-level file matching one of the extensions, or null.
@@ -32,7 +115,7 @@ function score(candidates, name, points, evidence) {
   }
 }
 
-export function detectStack(projectDir) {
+export function detectStack(projectDir, options = {}) {
   const candidates = []
 
   const pkgPath = join(projectDir, 'package.json')
@@ -153,6 +236,12 @@ export function detectStack(projectDir) {
       score(candidates, 'php-laravel', 25, 'laravel/* in composer.json')
     }
   }
+
+  // ── Project description (.md) ─────────────────────────────────────────────
+  // Scans README and similar overview docs (and an optional explicit doc) so the
+  // stack can be inferred from prose — useful for greenfield projects described
+  // in a document before any manifest/lockfile exists.
+  scoreMarkdown(candidates, collectMarkdown(projectDir, options.describeFile))
 
   // Remove zero-evidence placeholders and deduplicate
   const clean = candidates.filter(c => c.evidence.filter(Boolean).length > 0)

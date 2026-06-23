@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Architect** passa a exigir **NFRs** (performance/observabilidade/rollback) e **classificação de dados** (público/interno/pessoal/sensível) que aciona Security/Privacy.
 - **Docs** passa a documentar coleta/uso de dado pessoal (insumo de ROPA/aviso de privacidade).
 
+### Added (detecção via Markdown)
+- **Auto-detecção a partir de documentos `.md`** — o `stack-detector` agora lê `README.md` e docs de visão geral (`PROJECT.md`, `ARCHITECTURE.md`, `STACK.md`, `OVERVIEW.md`, `SPEC.md`, `PRD.md`) e infere a stack a partir da prosa (frameworks/linguagens/libs). Permite detectar a stack em projetos **greenfield** descritos antes de existir código/manifests.
+- **Flag `--describe=<file.md>`** no `init` — aponta um documento específico para a detecção. Manifests continuam com peso maior que prosa; `.md` confirma/desempata e pode atingir `high` quando a descrição é clara.
+
 ### Added (segunda onda)
 - **Tier de severidade `warn_patterns`** — 🟡 WARNING (não bloqueia) ao lado de `forbidden_patterns` (🔴 BLOCKER). Renderizado em coder/review/CLAUDE; adicionado aos perfis. Resolve falsos-BLOCKER (ex.: `console.log` em CLI).
 - **Agentes Maestro e Reporter explícitos** (`commands/maestro.md`, `commands/reporter.md`) — Maestro com **rubrica de severidade** e **teto de 2 iterações → escala para humano**; Reporter com **piso** no scorecard. Instalados como `/maestro` e `/reporter`.
@@ -35,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Notes
 - Projetos já existentes recebem tudo no próximo `octechpus update`.
-- Suíte de testes: **108 testes passando**.
+- Suíte de testes: **113 testes passando**.
 
 ## [2.3.0] - 2026-05-03
 

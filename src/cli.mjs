@@ -58,6 +58,7 @@ function printHelp() {
   console.log('')
   console.log(`  ${bold('Options:')}`)
   console.log(`    ${c('yellow', '--stack=<name>')}         Explicit profile (skips auto-detection)`)
+  console.log(`    ${c('yellow', '--describe=<file.md>')}   Infer stack from a project description doc (.md)`)
   console.log(`    ${c('yellow', '--force')}                Overwrite without asking`)
   console.log(`    ${c('yellow', '--minimal')}              Only .claude/commands (no docs, no github)`)
   console.log(`    ${c('yellow', '--dry-run')}              Preview without writing`)
@@ -137,7 +138,7 @@ function getDesignSystemExcludes(profile) {
   return exclude
 }
 
-async function selectProfile(projectDir, stackFlag, { askFn = ask } = {}) {
+async function selectProfile(projectDir, stackFlag, { askFn = ask, describeFile = null } = {}) {
   if (stackFlag) {
     try {
       const resolved = resolveProfile(stackFlag)
@@ -152,7 +153,7 @@ async function selectProfile(projectDir, stackFlag, { askFn = ask } = {}) {
     }
   }
 
-  const { candidates, best } = detectStack(projectDir)
+  const { candidates, best } = detectStack(projectDir, { describeFile })
 
   if (best.confidenceLabel === 'high') {
     const evidence = best.evidence.filter(Boolean).slice(0, 2).join(', ')
@@ -223,7 +224,7 @@ async function selectProfile(projectDir, stackFlag, { askFn = ask } = {}) {
 async function commandInit(targetDir, options = {}) {
   const {
     force = false, minimal = false, dryRun = false,
-    withDesignSystem = false, stack = null, askFn = ask,
+    withDesignSystem = false, stack = null, describe = null, askFn = ask,
   } = options
 
   printBanner(VERSION)
@@ -241,7 +242,7 @@ async function commandInit(targetDir, options = {}) {
   }
   console.log('')
 
-  const profile = await selectProfile(projectDir, stack, { askFn })
+  const profile = await selectProfile(projectDir, stack, { askFn, describeFile: describe })
   console.log(`  ${c('green', '✓')} Profile: ${c('cyan', profile.name)}`)
   console.log('')
 
@@ -890,6 +891,8 @@ const subcommand = positional[1] || null
 
 // Parse --stack=<name>
 const stackFlag = flags.find(f => f.startsWith('--stack='))?.split('=').slice(1).join('=') || null
+// Parse --describe=<path-to-md> (project description doc for auto-detection)
+const describeFlag = flags.find(f => f.startsWith('--describe='))?.split('=').slice(1).join('=') || null
 
 const options = {
   force: flags.includes('--force'),
@@ -898,6 +901,7 @@ const options = {
   withDesignSystem: flags.includes('--with-design-system'),
   keepCustomizations: !flags.includes('--no-keep-customizations'),
   stack: stackFlag,
+  describe: describeFlag,
 }
 
 // Target directory: positional arg that looks like a path

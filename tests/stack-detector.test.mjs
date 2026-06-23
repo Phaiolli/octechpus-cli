@@ -96,6 +96,47 @@ describe('detectStack — new stacks', () => {
   })
 })
 
+describe('detectStack — from a markdown project doc', () => {
+  let dir
+  afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true }) })
+
+  it('detects python-fastapi from a README (no manifests) with high confidence', () => {
+    dir = makeDir({ 'README.md': '# Faturas\nAPI em FastAPI com Pydantic v2 e uvicorn.' })
+    const r = detectStack(dir)
+    expect(r.best.name).toBe('python-fastapi')
+    expect(r.best.confidenceLabel).toBe('high')
+    expect(r.best.evidence.some(e => e.includes('doc .md'))).toBe(true)
+  })
+
+  it('detects nextjs-react from a PROJECT.md description', () => {
+    dir = makeDir({ 'PROJECT.md': '# Painel\nFrontend em Next.js + React + TypeScript com Tailwind e shadcn/ui.' })
+    const r = detectStack(dir)
+    expect(r.best.name).toBe('nextjs-react')
+  })
+
+  it('honors the describeFile option for a non-standard doc name', () => {
+    dir = makeDir({ 'arquitetura.md': '# Arq\nApp em Ruby on Rails com RSpec.' })
+    // não é um nome de overview reconhecido → só detecta via describeFile
+    expect(detectStack(dir).best.name).toBe(null)
+    expect(detectStack(dir, { describeFile: 'arquitetura.md' }).best.name).toBe('ruby-rails')
+  })
+
+  it('returns no candidates for a README without tech keywords', () => {
+    dir = makeDir({ 'README.md': '# Projeto\nUm documento sem menção a tecnologias.' })
+    const r = detectStack(dir)
+    expect(r.candidates).toHaveLength(0)
+  })
+
+  it('a manifest still outranks prose (package.json + README mentioning Python)', () => {
+    dir = makeDir({
+      'package.json': JSON.stringify({ name: 'x', dependencies: { next: '^14' } }),
+      'README.md': '# X\nMencionamos FastAPI e Django no histórico, mas é Next.js.',
+    })
+    const r = detectStack(dir)
+    expect(r.best.name).toBe('nextjs-react')
+  })
+})
+
 describe('detectStack — ambiguous-project', () => {
   it('returns multiple candidates when both package.json and pyproject.toml exist', () => {
     const result = detectStack(join(fixtures, 'ambiguous-project'))

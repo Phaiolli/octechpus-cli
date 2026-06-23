@@ -31,11 +31,18 @@ npx octechpus init
 npx octechpus init --stack=python-fastapi
 ```
 
-Na detecção automática, o CLI inspeciona `package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, `pom.xml`/`build.gradle`, `*.csproj`/`*.sln`, `Gemfile` e `composer.json`:
+Na detecção automática, o CLI inspeciona manifests (`package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, `pom.xml`/`build.gradle`, `*.csproj`/`*.sln`, `Gemfile`, `composer.json`) **e também documentos `.md` que descrevem o projeto** (`README.md`, `PROJECT.md`, `ARCHITECTURE.md`, etc.):
 - **Alta confiança** → aplica o profile imediatamente
 - **Confiança média** → pede confirmação antes de aplicar
 - **Baixa confiança** → lista candidatos (com "quando usar") e abre menu de seleção
 - **Sem confiança / stack mista** → use o profile `generic`
+
+Útil para projetos **greenfield** descritos num documento antes de existir código:
+
+```bash
+# Detecta a stack a partir de um doc específico
+npx octechpus init --describe=docs/spec.md
+```
 
 ---
 
@@ -198,6 +205,7 @@ octechpus help                        # Ajuda
 | Flag | Efeito |
 |---|---|
 | `--stack=<nome>` | Força um profile, ignorando auto-detecção |
+| `--describe=<file.md>` | Infere a stack a partir de um doc `.md` do projeto |
 | `--force` | Sobrescreve arquivos existentes sem perguntar |
 | `--minimal` | Instala só `.claude/commands/` (sem docs, sem GitHub templates) |
 | `--dry-run` | Preview do que seria criado, sem escrever nada |
@@ -285,7 +293,7 @@ octechpus doctor
 ## Testes
 
 ```bash
-npm test              # 108 testes, ~1.5s
+npm test              # 113 testes, ~1.5s
 npm run test:watch    # modo watch
 npm run test:coverage # com cobertura
 ```
