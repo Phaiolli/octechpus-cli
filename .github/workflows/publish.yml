@@ -27,12 +27,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # No registry-url here: it injects a NODE_AUTH_TOKEN .npmrc that breaks
+      # OIDC. Trusted Publishing authorizes via the id-token alone.
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
 
-      # Trusted Publishing (provenance) requires a recent npm
+      # Trusted Publishing (OIDC + provenance) requires npm >= 11.5.1
       - name: Upgrade npm
         run: npm install -g npm@latest
 
