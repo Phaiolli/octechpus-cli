@@ -168,7 +168,7 @@ src/
   profiles/            — profiles YAML (node-typescript, nextjs-react, etc.)
   templates/           — templates de comandos, design-system, github, docs
 tests/
-  *.test.mjs           — 132 testes Vitest
+  *.test.mjs           — 137 testes Vitest
   fixtures/            — projetos mínimos para testar auto-detecção
 ```
 

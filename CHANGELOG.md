@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0] - 2026-06-23
+
+### Added
+- **`/audit` também delega aos subagents** — o raio-x do projeto agora dispara
+  `Task(architect/reviewer/qa/security/privacy/docs)` **em paralelo** (read-only),
+  em vez de rodar tudo numa conversa só. Consistência com o `/pipeline`.
+- **`.octechpus/run/` entra no `.gitignore`** automaticamente no `init`/`update` —
+  os artefatos transientes de handoff do pipeline não são commitados por engano.
+
+### Changed
+- **`settings.json` agora faz *merge*, não pula** — projetos que já têm um
+  `.claude/settings.json` (usuários de Claude Code com config própria) passam a
+  **receber o modelo de permissão** via union-merge: as listas `allow/ask/deny` do
+  Octechpus são adicionadas preservando as regras e chaves do usuário (`hooks`, `env`,
+  `defaultMode`, etc.). Idempotente em `update`/`profile switch`.
+- Um `settings.json` com **JSON inválido nunca é sobrescrito** — o CLI avisa e
+  preserva o arquivo para correção manual.
+
+### Notes
+- Decisão consciente: **não** apertei a allowlist por stack (ela é universal e
+  generosa de propósito). O ganho de minimalismo não paga o custo de manutenção de 15
+  profiles, e a allowlist não é a camada de defesa real — o `deny` e o escopo dos
+  subagents são.
+
 ## [2.6.0] - 2026-06-23
 
 ### Added

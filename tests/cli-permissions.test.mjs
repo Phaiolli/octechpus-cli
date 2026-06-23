@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { spawnSync } from 'child_process'
-import { mkdtempSync, rmSync, readFileSync, readdirSync, existsSync } from 'fs'
+import { mkdtempSync, rmSync, readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { tmpdir } from 'os'
@@ -68,6 +68,58 @@ describe('init generates .claude/settings.json', () => {
     expect(settings.permissions.deny).toContain('Edit(profiles/**/prompts/**)')
     // no double-glob from a path that already ends in /**
     expect(settings.permissions.deny.every(r => !r.includes('/**/**'))).toBe(true)
+  })
+})
+
+// ── settings.json merge with pre-existing config ──────────────────────────────
+
+describe('init merges into an existing settings.json', () => {
+  let tmpDir
+  afterEach(() => { if (tmpDir) rmSync(tmpDir, { recursive: true, force: true }) })
+
+  it('preserves user rules and keys while adding the Octechpus baseline', () => {
+    tmpDir = makeTmpDir()
+    mkdirSync(join(tmpDir, '.claude'), { recursive: true })
+    writeFileSync(join(tmpDir, '.claude', 'settings.json'), JSON.stringify({
+      permissions: { allow: ['Bash(my-custom-tool:*)'] },
+      env: { MY_VAR: '1' },
+    }))
+    runCLI(['init', '--stack=node-javascript'], { cwd: tmpDir })
+    const s = JSON.parse(readFileSync(join(tmpDir, '.claude', 'settings.json'), 'utf-8'))
+    expect(s.permissions.allow).toContain('Bash(my-custom-tool:*)') // user rule kept
+    expect(s.permissions.deny.some(r => r.includes('.env'))).toBe(true) // octechpus added
+    expect(s.env.MY_VAR).toBe('1') // unrelated user key preserved
+  })
+
+  it('does not clobber an invalid settings.json', () => {
+    tmpDir = makeTmpDir()
+    mkdirSync(join(tmpDir, '.claude'), { recursive: true })
+    const garbage = '{ not valid json'
+    writeFileSync(join(tmpDir, '.claude', 'settings.json'), garbage)
+    const result = runCLI(['init', '--stack=node-javascript'], { cwd: tmpDir })
+    expect(result.status).toBe(0)
+    expect(readFileSync(join(tmpDir, '.claude', 'settings.json'), 'utf-8')).toBe(garbage)
+  })
+})
+
+// ── .gitignore hygiene ────────────────────────────────────────────────────────
+
+describe('init keeps transient run artifacts out of git', () => {
+  let tmpDir
+  afterEach(() => { if (tmpDir) rmSync(tmpDir, { recursive: true, force: true }) })
+
+  it('adds .octechpus/run/ to .gitignore', () => {
+    tmpDir = makeTmpDir()
+    runCLI(['init', '--stack=node-javascript'], { cwd: tmpDir })
+    expect(readFileSync(join(tmpDir, '.gitignore'), 'utf-8')).toContain('.octechpus/run/')
+  })
+
+  it('does not duplicate the entry on re-run', () => {
+    tmpDir = makeTmpDir()
+    writeFileSync(join(tmpDir, '.gitignore'), 'node_modules/\n.octechpus/run/\n')
+    runCLI(['init', '--stack=node-javascript'], { cwd: tmpDir })
+    const gi = readFileSync(join(tmpDir, '.gitignore'), 'utf-8')
+    expect(gi.match(/\.octechpus\/run\//g)?.length).toBe(1)
   })
 })
 

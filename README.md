@@ -177,7 +177,13 @@ vem de *não ter a capacidade*, não de te perguntar. Configurável via `agents_
 > **v2.6 — orquestração real:** o `/pipeline` **delega** cada fase ao subagent via ferramenta
 > `Task` (em vez de trocar de papel numa conversa só). O fan-out pós-Coder — Reviewer ∥ QA ∥
 > Security ∥ Privacy — roda **em paralelo**, e o handoff entre agentes passa por artefatos em
-> `.octechpus/run/` (cada subagent recebe os outputs relevantes dos anteriores).
+> `.octechpus/run/` (cada subagent recebe os outputs relevantes dos anteriores). O `/audit`
+> também delega aos subagents read-only em paralelo (v2.7).
+
+> **v2.7 — adoção sem atrito:** se você já tem um `.claude/settings.json`, o Octechpus faz
+> **merge** das permissões nele (preserva suas regras e chaves `hooks`/`env`/etc.) em vez de
+> pular o arquivo. Um `settings.json` inválido nunca é sobrescrito. O `init`/`update` também
+> adicionam `.octechpus/run/` ao `.gitignore`.
 
 ---
 
@@ -349,7 +355,7 @@ octechpus doctor
 ## Testes
 
 ```bash
-npm test              # 132 testes, ~2.5s
+npm test              # 137 testes, ~2.5s
 npm run test:watch    # modo watch
 npm run test:coverage # com cobertura
 ```
@@ -396,7 +402,7 @@ Detalhes e troubleshooting de auth: ver `CLAUDE.md` → "Como publicar no npm".
 
 ## Versão atual
 
-**2.6.0** — `/pipeline` delega de verdade aos subagents via `Task` (contexto isolado + fan-out paralelo pós-Coder + handoff por artefatos em `.octechpus/run/`), guarda anti prompt-injection nos subagents, e correção do vazamento de `$ARGUMENTS`. Construído sobre o modelo de permissão e subagents escopados da 2.5.0. Ver [ADR 002](docs/adr/002-evolucao-seguranca-e-eficiencia-agentes.md).  
+**2.7.0** — Merge de `settings.json` pré-existente (adoção sem atrito para quem já usa Claude Code), `/audit` delegando aos subagents em paralelo, e `.octechpus/run/` no `.gitignore`. Sobre a base da 2.6.0 (orquestração real via `Task`) e da 2.5.0 (permissões + subagents escopados). Ver [ADR 002](docs/adr/002-evolucao-seguranca-e-eficiencia-agentes.md).  
 Veja o [CHANGELOG](CHANGELOG.md) para histórico completo.
 
 ---

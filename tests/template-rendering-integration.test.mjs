@@ -216,6 +216,12 @@ describe('pipeline.md — node-typescript', () => {
     expect(result).toContain('.octechpus/run/')
   })
 
+  it('audit delegates to read-only subagents in parallel', () => {
+    const result = render('commands/audit.md', 'node-typescript')
+    expect(result).toContain('Task(security)')
+    expect(result).toContain('Task(privacy)')
+  })
+
   it('includes Designer step (designer always-on)', () => {
     const result = render('commands/pipeline.md', 'node-typescript')
     expect(result).toContain('DESIGNER')

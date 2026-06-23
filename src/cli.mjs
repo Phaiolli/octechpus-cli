@@ -18,7 +18,7 @@ const __dirname = dirname(__filename)
 // CONFIG
 // ═══════════════════════════════════════════════════════════
 
-const VERSION = '2.6.0'
+const VERSION = '2.7.0'
 const TEMPLATES_DIR = join(__dirname, 'templates')
 const DESIGN_SYSTEM_TEMPLATES_DIR = join(TEMPLATES_DIR, 'design-system')
 const MANIFEST_PATH = '.octechpus/manifest.json'
@@ -65,12 +65,12 @@ function dedup(arr) {
 }
 
 /**
- * Builds the .claude/settings.json content from a resolved profile.
+ * Builds the Octechpus permission set from a resolved profile (as an object).
  * Pre-approves safe work (allow), prompts on the gray zone (ask) and blocks the
  * destructive set (deny). Guardrail folders become Write/Edit deny rules so the
  * read-only paths declared in CLAUDE.md are enforced, not merely suggested.
  */
-function buildSettings(profile) {
+function buildSettingsObject(profile) {
   const perms = profile?.permissions || {}
   const allow = [...(perms.allow || [])]
   const ask = [...(perms.ask || [])]
@@ -86,14 +86,71 @@ function buildSettings(profile) {
     deny.push(`Write(${glob})`)
   }
 
-  const settings = {
-    permissions: {
-      allow: dedup(allow),
-      ask: dedup(ask),
-      deny: dedup(deny),
-    },
+  return { permissions: { allow: dedup(allow), ask: dedup(ask), deny: dedup(deny) } }
+}
+
+function serializeSettings(obj) {
+  return JSON.stringify(obj, null, 2) + '\n'
+}
+
+/** Fresh settings.json content for a profile (used when none exists yet). */
+function buildSettings(profile) {
+  return serializeSettings(buildSettingsObject(profile))
+}
+
+/**
+ * Union-merges the Octechpus permission rules into an existing settings object,
+ * preserving every other key the user may have set (hooks, env, defaultMode, …)
+ * and any custom permission rules they added. Additive by design — security
+ * baseline is always present without dropping the user's own configuration.
+ */
+function mergeSettingsInto(existing, profile) {
+  const oct = buildSettingsObject(profile)
+  const merged = { ...(existing && typeof existing === 'object' ? existing : {}) }
+  const perms = { ...(merged.permissions && typeof merged.permissions === 'object' ? merged.permissions : {}) }
+  for (const tier of ['allow', 'ask', 'deny']) {
+    const current = Array.isArray(perms[tier]) ? perms[tier] : []
+    perms[tier] = dedup([...current, ...oct.permissions[tier]])
   }
-  return JSON.stringify(settings, null, 2) + '\n'
+  merged.permissions = perms
+  return merged
+}
+
+/**
+ * Resolves the settings.json content to write for a project:
+ *   - none present      → fresh build
+ *   - present + valid   → union-merge (preserves user keys/rules)
+ *   - present + invalid → leave untouched (never clobber a hand-edited file)
+ * Returns { content, status }.
+ */
+function resolveSettingsContent(projectDir, profile) {
+  const path = join(projectDir, '.claude', 'settings.json')
+  if (!existsSync(path)) return { content: buildSettings(profile), status: 'create' }
+  let existing
+  try {
+    existing = JSON.parse(readFileSync(path, 'utf-8'))
+  } catch {
+    return { content: null, status: 'invalid' }
+  }
+  return { content: serializeSettings(mergeSettingsInto(existing, profile)), status: 'merge' }
+}
+
+/** Appends entries to .gitignore if missing (creates it when absent). */
+function ensureGitignoreEntries(projectDir, entries, { dryRun = false } = {}) {
+  const path = join(projectDir, '.gitignore')
+  const existing = existsSync(path) ? readFileSync(path, 'utf-8') : ''
+  const lines = existing.split('\n').map(l => l.trim())
+  const toAdd = entries.filter(e => !lines.includes(e.trim()))
+  if (toAdd.length === 0) return false
+  if (dryRun) {
+    console.log(`  ${c('yellow', '○')} ${c('dim', 'would update')} .gitignore ${c('dim', `(+${toAdd.length})`)}`)
+    return true
+  }
+  const prefix = existing && !existing.endsWith('\n') ? '\n' : ''
+  const block = `${prefix}\n# Octechpus — artefatos transientes de execução do pipeline\n${toAdd.join('\n')}\n`
+  writeFileSync(path, existing + block, 'utf-8')
+  console.log(`  ${c('green', '✓')} .gitignore ${c('dim', `(+${toAdd.join(', ')})`)}`)
+  return true
 }
 
 /** Subagent definitions active for this profile (respects opt-in agents like cost_engineer). */
@@ -129,13 +186,12 @@ function buildSubagent(def, profile) {
   return frontmatter + INJECTION_GUARD + body
 }
 
-/** All generated non-command files (settings + subagents) as { relPath, content }. */
-function buildGeneratedFiles(profile) {
-  const files = [{ relPath: '.claude/settings.json', content: buildSettings(profile) }]
-  for (const def of getActiveSubagents(profile)) {
-    files.push({ relPath: `.claude/agents/${def.name}.md`, content: buildSubagent(def, profile) })
-  }
-  return files
+/** Generated subagent files as { relPath, content } (settings handled separately, see resolveSettingsContent). */
+function buildSubagentFiles(profile) {
+  return getActiveSubagents(profile).map(def => ({
+    relPath: `.claude/agents/${def.name}.md`,
+    content: buildSubagent(def, profile),
+  }))
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -383,7 +439,23 @@ async function commandInit(targetDir, options = {}) {
   // ─────────────────────────────────────────────
   console.log(bold('  Permissions & Subagents (.claude/)'))
 
-  for (const { relPath, content } of buildGeneratedFiles(profile)) {
+  // settings.json — merge into an existing file instead of skipping it
+  const settings = resolveSettingsContent(projectDir, profile)
+  const settingsPath = join(projectDir, '.claude', 'settings.json')
+  if (settings.status === 'invalid') {
+    fileSkipped(settingsPath, 'JSON inválido — não sobrescrito; corrija manualmente')
+    existed++
+  } else {
+    writeFile(settingsPath, settings.content, { force: true, dryRun })
+    if (settings.status === 'merge' && !dryRun) {
+      console.log(`    ${c('dim', '↳ permissões mescladas no settings.json existente')}`)
+    }
+    created++
+    if (!dryRun) manifestFiles['.claude/settings.json'] = computeHash(settings.content)
+  }
+
+  // scoped subagents
+  for (const { relPath, content } of buildSubagentFiles(profile)) {
     const filepath = join(projectDir, relPath)
     if (existsSync(filepath) && !force) {
       fileExists(filepath)
@@ -394,6 +466,9 @@ async function commandInit(targetDir, options = {}) {
       if (!dryRun) manifestFiles[relPath] = computeHash(content)
     }
   }
+
+  // keep transient pipeline run artifacts out of version control
+  ensureGitignoreEntries(projectDir, ['.octechpus/run/'], { dryRun })
   console.log('')
 
   // ─────────────────────────────────────────────
@@ -836,9 +911,25 @@ async function commandUpdate(targetDir, options = {}) {
     if (!dryRun) updatedHashes[relPath] = newHash
   }
 
-  // settings.json + subagents — same customization-preserving logic as commands
+  // settings.json — always union-merge (idempotent: keeps user rules, ensures baseline)
   if (profile) {
-    for (const { relPath, content } of buildGeneratedFiles(profile)) {
+    const settings = resolveSettingsContent(projectDir, profile)
+    const settingsRel = '.claude/settings.json'
+    const settingsPath = join(projectDir, settingsRel)
+    if (settings.status === 'invalid') {
+      fileSkipped(settingsPath, 'JSON inválido — não sobrescrito; corrija manualmente')
+      skippedCount++
+    } else {
+      const existedBefore = settings.status === 'merge'
+      writeFile(settingsPath, settings.content, { force: true, dryRun })
+      if (existedBefore) updated++; else added++
+      if (!dryRun) updatedHashes[settingsRel] = computeHash(settings.content)
+    }
+  }
+
+  // subagents — same customization-preserving logic as commands
+  if (profile) {
+    for (const { relPath, content } of buildSubagentFiles(profile)) {
       const filepath = join(projectDir, relPath)
       const newHash = computeHash(content)
 
@@ -863,6 +954,9 @@ async function commandUpdate(targetDir, options = {}) {
       updated++
       if (!dryRun) updatedHashes[relPath] = newHash
     }
+
+    // ensure transient run artifacts stay gitignored on existing projects too
+    ensureGitignoreEntries(projectDir, ['.octechpus/run/'], { dryRun })
   }
 
   const agentsPath = join(projectDir, 'docs', 'OCTECHPUS_AGENTS.md')
@@ -1025,8 +1119,15 @@ async function commandProfile(subcommand, profileArg, targetDir) {
         switched++
       }
 
-      // settings.json + subagents are profile-derived — re-render on switch
-      for (const { relPath, content } of buildGeneratedFiles(newProfile)) {
+      // settings.json (merge) + subagents are profile-derived — re-render on switch
+      const switchSettings = resolveSettingsContent(projectDir, newProfile)
+      if (switchSettings.status !== 'invalid') {
+        const sp = join(projectDir, '.claude', 'settings.json')
+        writeFile(sp, switchSettings.content, { force: true })
+        manifest.files['.claude/settings.json'] = computeHash(switchSettings.content)
+        switched++
+      }
+      for (const { relPath, content } of buildSubagentFiles(newProfile)) {
         const filepath = join(projectDir, relPath)
         writeFile(filepath, content, { force: true })
         manifest.files[relPath] = computeHash(content)

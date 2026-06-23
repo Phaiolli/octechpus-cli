@@ -10,7 +10,16 @@ Se nenhum escopo foi especificado, audite o projeto inteiro.
 
 ## Instruções
 
-Você deve executar TODOS os agentes abaixo na ordem especificada, analisando o projeto como um todo (não uma demanda específica). O objetivo é gerar um raio-x completo do estado atual do projeto.
+Você é o **orquestrador** do audit. Cada agente abaixo já existe como **subagent
+escopado** em `.claude/agents/` (os de análise são **read-only**). **Delegue** cada
+audit ao subagent correspondente com a ferramenta **Task** (`subagent_type` = nome do
+agente), passando como escopo "auditar o projeto inteiro" — não assuma o papel você mesmo.
+
+Como os audits **não dependem entre si**, dispare-os **em paralelo** (uma única mensagem
+com várias chamadas Task): `Task(architect)`, `Task(reviewer)`, `Task(qa)`,
+`Task(security)`, `Task(privacy)`, `Task(docs)`. O audit de repositório (GitHub) e o
+mapeamento geral (Maestro) você pode conduzir inline. As seções numeradas abaixo são o
+**briefing de cada subagent**; cada um retorna seu score + análise para você consolidar.
 
 ### 1. 🎯 MAESTRO — Mapeamento Geral
 - Identifique a estrutura geral do projeto (pastas, módulos, camadas)
