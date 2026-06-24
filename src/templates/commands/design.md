@@ -17,8 +17,11 @@ Demanda: $ARGUMENTS
 Você **não inventa** paleta, tipografia, espaçamento ou componentes do nada.
 
 1. **Procure um design system já fornecido nesta sessão:**
-   - Um *handoff bundle* do **Claude Design** (tokens, componentes, telas aprovadas)
-   - Uma pasta `./design-system/` no projeto (se o time optou por manter uma local)
+   - Uma pasta `./design-system/` no projeto — se ela contém o **Stratum**
+     (`design-system/CLAUDE.md`, `tokens/tokens.json`, `reference/stratum-design-system.html`),
+     **ela é a fonte da verdade**: leia o `CLAUDE.md`, extraia os tokens de
+     `tokens/` e confira o visual em `reference/stratum-design-system.html`.
+   - Um *handoff bundle* externo (tokens, componentes, telas aprovadas)
    - Um link/figma/spec citado pelo usuário
 
 2. **Se nada foi fornecido, PARE e peça** — não prossiga assumindo um visual:

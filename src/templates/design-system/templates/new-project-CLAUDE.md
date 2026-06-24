@@ -5,42 +5,46 @@
 [Descrição curta do que é este projeto, qual o domínio, principais features]
 
 **Stack:**
-- Framework: [React / Next.js / Vue / Svelte]
-- Estilização: Tailwind CSS + shadcn/ui (preset do design system)
+- Framework: [Next.js 15 (App Router) / React / Vue / Svelte]
+- Estilização: Tailwind CSS v4 (preset do Stratum) + Radix UI primitives
 - Ícones: Lucide
+- Tema: next-themes via `data-stratum-theme`
 - TypeScript: [sim/não]
 
 ## Design System
 
-Este projeto **segue o design system pessoal**. Todas as decisões de UI, padrões de componentes e tokens estão documentados em:
+Este projeto **segue o Stratum Design System**. Todas as decisões de UI, padrões de
+componentes e tokens estão documentados em:
 
 ```
-@../claude-design-system/CLAUDE.md
+@./design-system/CLAUDE.md
 ```
 
-> Substituir o caminho acima pelo caminho real do design system na sua máquina ou no monorepo. Exemplos:
-> - Symlink local: `@./design-system/CLAUDE.md`
+> Ajuste o caminho acima se o design system não estiver na raiz. Exemplos:
+> - Local (padrão Octechpus): `@./design-system/CLAUDE.md`
 > - Monorepo: `@../../packages/design-system/CLAUDE.md`
-> - Path absoluto: `@~/dev/claude-design-system/CLAUDE.md`
 
-**Sempre consulte essa documentação antes de gerar componentes ou layouts.**
+**Sempre consulte essa documentação antes de gerar componentes ou layouts.** No
+fluxo Octechpus, rode `/design [demanda]` para acionar o Designer, que lê o Stratum
+como fonte da verdade visual.
 
-Documentos específicos para referência rápida:
+Referências rápidas do Stratum:
 
-- `@../claude-design-system/docs/01-principles.md` — Princípios de UX/UI
-- `@../claude-design-system/docs/02-architecture.md` — Estrutura de pastas
-- `@../claude-design-system/docs/03-layout.md` — Layouts de página
-- `@../claude-design-system/docs/04-components.md` — Receitas de componentes
-- `@../claude-design-system/docs/05-navigation.md` — Padrões de navegação
-- `@../claude-design-system/docs/06-responsive.md` — Estratégia responsiva
-- `@../claude-design-system/docs/07-icons.md` — Sistema de ícones
-- `@../claude-design-system/docs/08-accessibility.md` — Acessibilidade
+- `@./design-system/tokens/tokens.json` — fonte da verdade dos tokens (DTCG, OKLCH)
+- `@./design-system/tokens/tokens.css` — variáveis CSS a importar em `globals.css`
+- `@./design-system/tokens/tailwind.preset.ts` — preset do Tailwind v4
+- `@./design-system/reference/stratum-design-system.html` — spec visual (abrir no navegador)
 
 ## Particularidades deste projeto
 
 ### Sobreposições ao design system
-[Documentar aqui qualquer desvio justificado do design system base. Exemplos:]
+[Documentar aqui qualquer desvio justificado do Stratum. Exemplos:]
 - [O que foi mudado e por quê]
+
+### Brand
+[Valores de marca aplicados sobre o Stratum brand-agnostic:]
+- `color.brand.primary` / `color.brand.accent` deste projeto
+- Logo em `public/brand/`
 
 ### Domain-specific
 [Conceitos do domínio que o Claude precisa entender para gerar código apropriado]
@@ -56,21 +60,22 @@ Documentos específicos para referência rápida:
 ## Comandos comuns
 
 ```bash
-npm run dev       # iniciar dev server
-npm run build     # build de produção
-npm run test      # rodar testes
-npm run lint      # lint
+pnpm dev          # iniciar dev server
+pnpm build        # build de produção
+pnpm test         # rodar testes
+pnpm lint         # lint
 ```
 
 ## Estrutura
 
-Ver `@../claude-design-system/docs/02-architecture.md` para estrutura padrão.
+Ver `@./design-system/CLAUDE.md` (seção "Layout de arquivos a produzir") para a
+estrutura padrão.
 
 Particularidades deste projeto:
 - [Pastas adicionais ou diferentes]
 
 ## Quando estiver em dúvida
 
-1. Consulte primeiro o design system
+1. Consulte primeiro o Stratum (`design-system/`)
 2. Se não cobrir, pergunte antes de inventar um padrão novo
-3. Padrões novos definidos aqui devem **eventualmente** ser promovidos ao design system se forem genéricos
+3. Padrões novos genéricos devem **eventualmente** ser promovidos ao Stratum
