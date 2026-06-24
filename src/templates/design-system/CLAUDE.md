@@ -1,66 +1,175 @@
-# Design System — Instruções para Claude Code
+# Stratum Design System — Contexto do projeto
 
-Este é o **design system pessoal** que deve ser seguido em **todos os projetos de interface** (sistemas web e dashboards). Este arquivo é a fonte única da verdade — sempre consulte-o antes de gerar qualquer interface.
+> Este arquivo vive em `design-system/` e é a **fonte única da verdade visual**
+> deste projeto. No fluxo Octechpus ele é consultado pelo agente `/design`
+> (Designer) e pode ser referenciado a partir do `CLAUDE.md` da raiz via
+> `@./design-system/CLAUDE.md`. Leia-o por inteiro antes de gerar qualquer interface.
 
-## Stack base obrigatória
+## O que é o Stratum
 
-Independentemente do framework do projeto (React, Next.js, Vue, Svelte, etc.), **sempre** use:
+**Stratum** é um design system híbrido pensado para ser a fundação universal de
+sites institucionais, apps SaaS, dashboards, ferramentas internas e produtos
+mobile/responsivos. Ele é:
 
-- **Tailwind CSS** para estilização (configurado com o preset deste design system)
-- **shadcn/ui** (ou seu port equivalente: `shadcn-vue`, `shadcn-svelte`) para componentes base
-- **Lucide Icons** como biblioteca de ícones padrão
-- **Inter** como fonte UI primária, **JetBrains Mono** para código/dados monoespaçados
-- **Radix UI** primitives quando precisar de componentes acessíveis sem estilo
+- **Dark-first**: o modo escuro é o padrão. O claro é uma alternativa completa.
+- **Brand-agnostic**: a identidade visual (logo, `--primary`, `--accent`) muda por
+  projeto; estrutura, espaçamento, motion e anatomia dos componentes, não.
+- **Token-driven**: toda cor, espaço, raio, sombra e valor de motion vive em
+  `tokens/tokens.json` (formato Design Tokens Community Group) como fonte da verdade.
+  As variáveis CSS e a config do Tailwind são geradas a partir dele.
+- **WCAG AA**: contraste, foco visível, navegação por teclado e reduced motion não
+  são negociáveis.
 
-## Identidade visual
+A especificação visual completa — cada componente, template de página, regra de
+microcopy e padrão LGPD — está em `reference/stratum-design-system.html`. Abra esse
+arquivo no navegador quando precisar ver o visual pretendido de algo.
 
-- **Tema padrão:** escuro (com toggle para claro)
-- **Estilo:** moderno com glassmorphism e gradientes sutis
-- **Densidade:** equilibrada — não tão densa quanto Linear, não tão arejada quanto Stripe
-- **Personalidade:** profissional, sofisticado, mas com toques vibrantes nos accents
+## Como usar este handoff
 
-## Documentação detalhada
+O HTML em `reference/` é **uma especificação de design, não código de produção**.
+Não copie a marcação dele literalmente. Reimplemente cada componente de forma
+idiomática na stack deste repositório, usando os tokens em `tokens/` como fonte
+única da verdade de estilização.
 
-Sempre consulte estes documentos antes de gerar componentes ou layouts:
+## Stack recomendada (se começando do zero)
 
-- `@./docs/01-principles.md` — Princípios de UX/UI inegociáveis
-- `@./docs/02-architecture.md` — Estrutura de pastas dos projetos
-- `@./docs/03-layout.md` — Padrões de layout (sidebar, topbar, área de conteúdo)
-- `@./docs/04-components.md` — Receitas de componentes (cards, tabelas, forms, modals)
-- `@./docs/05-navigation.md` — Padrões de navegação e hierarquia
-- `@./docs/06-responsive.md` — Breakpoints e estratégia responsiva
-- `@./docs/07-icons.md` — Sistema de ícones
-- `@./docs/08-accessibility.md` — Requisitos de acessibilidade
-- `@./tokens/tokens.css` — Variáveis CSS (cores, espaçamento, tipografia)
-- `@./tokens/tailwind.preset.js` — Preset Tailwind a importar no projeto
+Se o repositório ainda não tem stack definida, use por padrão:
 
-## Regras inegociáveis
+- **Next.js 15** (App Router, React Server Components)
+- **TypeScript** strict
+- **Tailwind CSS v4** com o preset em `tokens/tailwind.preset.ts`
+- **Radix UI primitives** (Dialog, Popover, DropdownMenu, Tooltip, Tabs, Toast, etc.)
+  — envolva-os com a camada visual do Stratum
+- **Lucide React** para ícones (`lucide-react`)
+- **Geist + Geist Mono** para tipografia (`geist/font`)
+- **next-themes** para o toggle dark/light
+- **clsx + tailwind-merge** combinados num helper `cn()`
 
-Estas regras devem ser seguidas em **100% dos componentes** gerados:
+Se o repositório já tem stack, adapte — mantenha os tokens, troque a camada de render.
 
-1. **Nunca use cores hardcoded.** Use tokens (`bg-surface`, `text-primary`, `border-subtle`). Nunca `bg-[#1a1a1a]` ou `text-gray-500`.
-2. **Nunca use espaçamento arbitrário.** Use a escala de 4px (`p-2`, `p-4`, `p-6`...). Evite `p-[13px]`.
-3. **Toda interface deve ser responsiva.** Mobile-first. Teste mental em 375px, 768px, 1280px.
-4. **Toda ação interativa deve ter estado focus visível.** `focus-visible:ring-2 ring-accent`.
-5. **Contraste mínimo AA (4.5:1) para texto.** Sempre.
-6. **Glassmorphism com moderação.** Use em superfícies elevadas (modals, popovers, sidebar overlay), não em todo lugar.
-7. **Gradientes só em accents** — botões primários, badges de destaque, gráficos. Nunca em backgrounds grandes.
-8. **Animações sempre com `transition-colors`, `transition-transform` ou `transition-opacity`** com duração `150ms` ou `200ms`. Nunca `transition-all`.
-9. **Sempre componha com shadcn/ui** quando disponível, em vez de criar do zero.
-10. **Sempre tipe props em TypeScript** quando o projeto for TS.
+## Layout de arquivos a produzir
 
-## Ao iniciar um novo projeto
+```
+src/
+├── styles/
+│   ├── tokens.css            ← copiado de design-system/tokens/tokens.css
+│   └── globals.css           ← importa tokens.css, resets do body, font-face
+├── lib/
+│   ├── tokens.ts             ← objeto TS de design-system/tokens/tokens.ts
+│   └── cn.ts                 ← helper clsx+tailwind-merge
+├── components/
+│   ├── ui/                   ← primitivos (Button, Input, Card, …)
+│   │   ├── button.tsx
+│   │   ├── input.tsx
+│   │   └── …
+│   ├── patterns/             ← padrões compostos (Sidebar, DataTable, …)
+│   └── icons.ts              ← re-export dos ícones lucide padronizados
+├── app/                      ← Next.js app router
+│   ├── layout.tsx            ← ThemeProvider, body, setup de fontes
+│   └── …
+```
 
-1. Copiar `./tokens/tokens.css` para `src/styles/tokens.css` e importar no entrypoint
-2. Copiar `./tokens/tailwind.preset.js` e referenciar em `tailwind.config.js` via `presets: [...]`
-3. Inicializar shadcn/ui: `npx shadcn-ui@latest init` (escolher New York style + dark)
-4. Instalar dependências base: `lucide-react`, `clsx`, `tailwind-merge`, `class-variance-authority`
-5. Seguir a estrutura de pastas em `@./docs/02-architecture.md`
-6. Copiar `./templates/new-project-CLAUDE.md` como `CLAUDE.md` na raiz do novo projeto
+## Regras de implementação de componentes
 
-## Quando há conflito
+1. **Sem números mágicos.** Todo espaçamento, cor, raio e sombra vem de uma utility
+   do Tailwind que aponta para um token. Adicionar `padding: 17px` é um bug.
+2. **Variantes com `cva`** (`class-variance-authority`). Documente cada prop de
+   variante com um JSDoc de uma linha.
+3. **Padrão `asChild`** (Radix Slot) para polimorfismo — wrappers como
+   `<Button asChild><Link>…</Link></Button>`.
+4. **Refs encaminhadas em tudo.** Use `React.forwardRef` em todo primitivo.
+5. **Acessibilidade passa no build.** Cada PR roda `axe-core`. Focus rings, labels e
+   roles ARIA fazem parte do componente, não são parafusados depois.
+6. **Paridade dark/light é garantida por tokens.** Nunca escreva `dark:bg-...` para
+   decisões de cor de componente — o token já troca. Use `dark:` só quando o design
+   genuinamente diverge entre os modos (raro).
+7. **`prefers-reduced-motion` respeitado.** Use a variante `motion-safe:` para
+   transições não-essenciais.
+8. **Seguro no server.** Componentes são RSC por padrão quando possível; marque
+   `"use client"` só quando necessário (state, eventos, refs).
+9. **Composição sobre configuração.** Três primitivos pequenos que compõem &gt; um
+   componente gordo com 18 props.
 
-Se o usuário pedir algo que conflita com este design system (ex: "use cinza #888 aqui"):
-1. **Avise** que há um token equivalente
-2. **Sugira** o uso do token (`text-secondary` em vez de `#888`)
-3. **Cumpra a decisão final do usuário**, mas registre em comentário no código que é uma exceção
+## Cor & tema
+
+- Os tokens estão em **OKLCH** para uniformidade perceptual. Não converta para hex a
+  menos que uma ferramenta realmente exija.
+- A troca de tema é por data-attribute: `[data-stratum-theme="light"]` no `<html>`. O
+  preset do Tailwind configura `darkMode: ["selector", '[data-stratum-theme="dark"]']`.
+- O accent da marca também é data-attribute:
+  `[data-accent="violet"|"emerald"|"amber"|"rose"|"blue"]`. O padrão é `blue`.
+- O toggle do usuário deve persistir em `localStorage` (`stratum-theme`,
+  `stratum-accent`) e respeitar `prefers-color-scheme` na primeira visita.
+
+## Tipografia
+
+- Primária: **Geist** (`weight: 300 400 500 600 700`) — `font-sans`
+- Mono: **Geist Mono** (`400 500 600`) — `font-mono` — use para números em tabelas
+  (`tabular-nums`), código, kbd, timestamps, labels de metadado
+- Accent editorial (opcional, com parcimônia): **Instrument Serif** — só para heros
+- Tokens de escala: `display | h1 | h2 | h3 | h4 | body-lg | body | small | label` —
+  expostos como utilities `text-display`, `text-h1`, etc.
+
+## Iconografia
+
+- **Lucide React** apenas. Padrão `size={16}`, `strokeWidth={2}`.
+- Padronize o conjunto de ação em `src/components/icons.ts`: `Search`, `Plus`,
+  `Pencil`, `Trash2`, `Save`, `Download`, `Send`, `Filter`, `ArrowUpDown`, `Settings`,
+  `User`, `Bell`, `LayoutGrid`, `FileText`, `Calendar`, `HelpCircle`, `Shield`,
+  `Lock`, `LogOut`. Importe deste arquivo em todo lugar — sem imports diretos de
+  `lucide-react` nos componentes.
+
+## LGPD & privacidade
+
+Este DS entrega padrões **estruturais** de conformidade LGPD — UI para banner de
+cookies, modal de preferências granular, "Meus dados" (download/correção/exclusão),
+contato do DPO, log de auditoria. O **conteúdo** de toda página legal deve ser
+revisado pelo seu time jurídico antes da publicação. Nunca publique o texto
+placeholder de `reference/`.
+
+## O que NÃO fazer
+
+- Não introduza uma segunda biblioteca de ícones, um segundo stack de fontes, nem um
+  segundo armazém de tokens.
+- Não adicione um runtime CSS-in-JS (emotion, styled-components). Tailwind + CSS vars
+  é o contrato.
+- Não reinvente primitivos de overlay — envolva o Radix.
+- Não adicione um plugin do Tailwind que sobrescreva cores do tema com hexes fixos.
+- Não entregue um componente sem uma story de Storybook e um teste Vitest/RTL básico.
+
+## Comandos de bootstrap
+
+```bash
+# Next.js
+pnpm create next-app stratum-app --typescript --tailwind --eslint --app --src-dir --import-alias "@/*"
+cd stratum-app
+
+# Deps principais
+pnpm add @radix-ui/react-dialog @radix-ui/react-popover @radix-ui/react-dropdown-menu \
+        @radix-ui/react-tooltip @radix-ui/react-tabs @radix-ui/react-toast \
+        @radix-ui/react-checkbox @radix-ui/react-switch @radix-ui/react-slot \
+        class-variance-authority clsx tailwind-merge lucide-react next-themes geist
+
+# Deps de dev
+pnpm add -D @types/node prettier prettier-plugin-tailwindcss
+```
+
+## Critérios de aceite para "Stratum está implementado neste repo"
+
+- [ ] `tokens/tokens.css` importado em `globals.css`; toggles de atributo de tema funcionam
+- [ ] Pelo menos estes primitivos existem com variantes batendo com a referência:
+  `Button`, `Input`, `Textarea`, `Select`, `Checkbox`, `Radio`, `Switch`, `Card`,
+  `Badge`, `Avatar`, `Tooltip`, `Dialog`, `Sheet`, `Popover`, `DropdownMenu`, `Tabs`,
+  `Toast`, `Alert`, `Skeleton`, `Progress`, `Table`, `Pagination`
+- [ ] Sidebar + Header (app shell) compostos e documentados
+- [ ] Dark mode é padrão; o toggle de light funciona sem flash (SSR-safe)
+- [ ] Todos os primitivos acessíveis por teclado; focus rings visíveis; axe-core passa
+- [ ] Banner de cookies + modal de preferências + página "Meus dados" implementados
+  conforme a seção de LGPD em `reference/`
+- [ ] Um template de página da `reference/` reconstruído ponta a ponta
+  (recomendado: Dashboard) como smoke test
+
+---
+
+Na dúvida, abra `reference/stratum-design-system.html` e confira o visual pretendido.
+Os tokens são o contrato; o HTML é a figura.

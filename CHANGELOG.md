@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.0] - 2026-06-23
+
+### Changed
+- **O starter de design system agora é o Stratum** — um DS híbrido, dark-first,
+  brand-agnostic e token-driven (substitui o antigo "Claude Design System"
+  Inter/glassmorphism). O `npx octechpus design-system add` (e `--with-design-system`)
+  passa a entregar:
+  - `tokens/tokens.json` — **fonte da verdade DTCG** (cores OKLCH), mais as formas
+    geradas `tokens.css`, `tokens.ts` e o preset `tailwind.preset.ts` (Tailwind v4).
+  - `reference/stratum-design-system.html` — spec visual auto-contida (60+ componentes,
+    11 templates de página, toggle de tema/accent, padrões de LGPD).
+  - `PROMPT_STARTERS.md` — prompts prontos para bootstrap.
+  - `CLAUDE.md`/`README.md` reescritos: o pacote é lido pelo agente `/design` e
+    referenciável da raiz via `@./design-system/CLAUDE.md`.
+- **`getDesignSystemExcludes()`** reaponta para os novos arquivos de token por modo:
+  `none` não entrega tokens; `css-only` entrega `tokens.css` + `tokens.json`;
+  `tailwind` entrega tudo (json + css + ts + preset).
+- O comando `/design` prefere o `./design-system/` local (Stratum) como fonte da
+  verdade quando ele existe.
+
+### Removed
+- Os 8 docs antigos (`docs/01-08`) e o preset `tailwind.preset.js` do starter
+  anterior — superados pelo `CLAUDE.md` auto-contido do Stratum + a referência visual.
+
 ## [2.7.0] - 2026-06-23
 
 ### Added

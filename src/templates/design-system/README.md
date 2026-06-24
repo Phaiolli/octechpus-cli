@@ -1,162 +1,89 @@
-# Claude Design System
+# Stratum Design System — Pacote de handoff
 
-Design system pessoal para sistemas web e dashboards, otimizado para uso com **Claude Code** no VS Code.
-
-> Fonte única da verdade. Importado em todos os projetos. Sempre.
+Este `design-system/` contém tudo que o Claude Code precisa para implementar o
+Stratum DS num codebase React/Next.js real. No fluxo Octechpus ele é a fonte da
+verdade visual lida pelo agente `/design` (Designer).
 
 ## O que tem aqui
 
 ```
-claude-design-system/
-├── CLAUDE.md                    ← Lido pelo Claude Code (entry point)
-├── README.md                    ← Você está aqui
-├── tokens/
-│   ├── tokens.css               ← Variáveis CSS (cores, spacing, typography)
-│   └── tailwind.preset.js       ← Preset Tailwind a importar
-├── docs/
-│   ├── 01-principles.md         ← Princípios UX/UI
-│   ├── 02-architecture.md       ← Estrutura de pastas
-│   ├── 03-layout.md             ← Layouts (sidebar, topbar, content)
-│   ├── 04-components.md         ← Receitas de componentes
-│   ├── 05-navigation.md         ← Navegação e hierarquia
-│   ├── 06-responsive.md         ← Breakpoints e responsividade
-│   ├── 07-icons.md              ← Sistema de ícones (Lucide)
-│   └── 08-accessibility.md      ← A11y obrigatória
-└── templates/
-    └── new-project-CLAUDE.md    ← Template para CLAUDE.md de novos projetos
+design-system/
+├── CLAUDE.md                    ← contexto completo (lido pelo /design e referenciável da raiz)
+├── README.md                    ← você está aqui
+├── PROMPT_STARTERS.md           ← prompts prontos para iniciar o trabalho
+├── reference/
+│   └── stratum-design-system.html   ← spec visual (abra no navegador)
+└── tokens/
+    ├── tokens.json              ← fonte da verdade (formato DTCG)
+    ├── tokens.css               ← CSS custom properties (jogue em styles/)
+    ├── tokens.ts                ← forma de objeto TS (importe no código JS)
+    └── tailwind.preset.ts       ← preset do Tailwind v4 (estende o theme)
 ```
 
-## Identidade
+## Como usar no fluxo Octechpus
 
-- **Tema padrão:** dark com toggle para light
-- **Estilo:** moderno, glassmorphism + gradientes sutis
-- **Stack base:** Tailwind CSS + shadcn/ui + Lucide Icons
-- **Agnóstico de framework:** React, Next.js, Vue, Svelte
+O `design-system/` foi instalado pelo `npx octechpus design-system add`. A partir
+daqui:
 
-## Como usar
+1. Rode `/design [demanda]` no Claude Code para acionar o agente Designer. Ele lê
+   este pacote como fonte da verdade visual e produz o briefing para o Coder.
+2. Para sincronizar com a versão mais recente do template: `npx octechpus design-system update`.
+3. Opcional: no `CLAUDE.md` da raiz do projeto, referencie `@./design-system/CLAUDE.md`
+   para que o contexto seja carregado também fora do pipeline.
 
-### 1) Coloque este folder em local fixo
+## Fidelidade
 
-Recomendado:
+Esta é uma especificação de **alta fidelidade**: cores finais (OKLCH), tipografia
+final (Geist/Geist Mono), escala de espaçamento final, tokens de motion finais,
+anatomia de componente final. O desenvolvedor deve bater com a referência pixel a
+pixel usando os tokens, não a sua interpretação.
 
-```bash
-# Opção A — pasta dedicada na home
-git clone [seu-repo] ~/dev/claude-design-system
+## Referência visual
 
-# Opção B — em monorepo
-packages/claude-design-system/
-```
+`reference/stratum-design-system.html` é um arquivo HTML standalone e auto-contido.
+Abra-o direto em qualquer navegador moderno para ver:
 
-Versionar em Git é recomendado — assim você evolui o sistema ao longo do tempo.
+- Todas as foundations (cor, tipografia, espaçamento, raio, sombra, motion, ícones)
+- 60+ componentes com estados e variantes
+- 11 templates de página (Home institucional, Dashboard SaaS, Login + 2FA, Listagem
+  com filtros, Settings + LGPD, Mobile, Política de Privacidade, Cookie banner +
+  modal, 404, Manutenção, Sucesso)
+- Diretrizes de LGPD, acessibilidade e voz/microcopy
 
-### 2) Em cada projeto novo
+O header tem um **toggle de tema (dark ↔ light)** e um **seletor de accent
+(blue/violet/emerald/amber/rose)** — alterne-os para ver como o sistema inteiro
+responde a uma troca de marca.
 
-**Passo 1:** Copiar `templates/new-project-CLAUDE.md` para a raiz do projeto como `CLAUDE.md` e ajustar o caminho de referência ao design system.
+## Customização de marca
 
-**Passo 2:** Importar tokens CSS:
+Para transformar o Stratum no design system de uma marca específica:
 
-```bash
-# Opção A — copiar o arquivo
-cp ~/dev/claude-design-system/tokens/tokens.css src/styles/tokens.css
+1. Em `tokens/tokens.json`, substitua `color.brand.primary` e `color.brand.accent`
+   pelos valores da marca
+2. Coloque o logo da marca em `public/brand/` (horizontal, vertical, símbolo, favicon)
+3. Opcionalmente troque o par de fontes em `tokens/tokens.json` → `typography.font-sans`
+4. Re-exporte o CSS/Tailwind a partir de `tokens.json`
 
-# Opção B — symlink (mantém sincronizado)
-ln -s ~/dev/claude-design-system/tokens/tokens.css src/styles/tokens.css
-```
+Todo o resto — espaçamento, componentes, motion, acessibilidade — é herdado sem mudança.
 
-No `globals.css` do projeto:
+## Stack assumida
 
-```css
-@import './tokens.css';
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-```
+Se o `CLAUDE.md` não sobrescrever:
 
-**Passo 3:** Configurar Tailwind preset em `tailwind.config.js`:
+- Next.js 15 (App Router)
+- TypeScript strict
+- Tailwind CSS v4
+- Radix UI primitives
+- Lucide React icons
+- Geist + Geist Mono via `geist/font`
+- `next-themes` para troca de tema
+- `class-variance-authority` para variantes
 
-```js
-module.exports = {
-  presets: [require('../path/to/claude-design-system/tokens/tailwind.preset.js')],
-  content: ['./src/**/*.{ts,tsx,js,jsx,vue,svelte}'],
-  // ... resto da config específica do projeto
-};
-```
+## Importante
 
-**Passo 4:** Inicializar shadcn/ui:
+O HTML em `reference/` é uma **referência de design**, não código de produção. Não
+entregue a marcação dele como está. A tarefa é recriá-la em React + Tailwind
+idiomático, com os tokens como contrato.
 
-```bash
-npx shadcn-ui@latest init
-```
-
-Quando perguntar:
-- Style: **New York**
-- Base color: **Slate** (será sobrescrito pelos nossos tokens)
-- CSS variables: **Yes**
-- Default theme: **Dark**
-
-**Passo 5:** Instalar dependências base:
-
-```bash
-npm install lucide-react clsx tailwind-merge class-variance-authority tailwindcss-animate
-```
-
-**Passo 6:** Adicionar fonte Inter ao HTML:
-
-```html
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-```
-
-### 3) Trabalhar com Claude Code no VS Code
-
-Quando você abrir o projeto no VS Code com Claude Code:
-
-1. Claude Code lê automaticamente o `CLAUDE.md` do projeto
-2. Esse `CLAUDE.md` aponta para o design system via `@` references
-3. Claude consulta os documentos relevantes ao gerar código
-4. Toda interface gerada segue os padrões definidos
-
-Para garantir que Claude está usando o design system, você pode confirmar perguntando:
-> "Quais regras do design system você está seguindo neste componente?"
-
-## Atualizando o design system
-
-Quando você quiser evoluir o sistema:
-
-1. Edite os arquivos diretamente (`tokens.css`, docs, etc.)
-2. Commit as mudanças no Git
-3. Nos projetos que usam **symlink** ou **monorepo**, mudanças são imediatas
-4. Em projetos com **cópia**, atualize: `cp -r tokens/* path/to/project/src/styles/`
-
-### Versionamento (opcional, mas recomendado)
-
-Tagueie versões major em Git:
-
-```bash
-git tag v1.0.0
-git push --tags
-```
-
-Em projetos que precisam de versão fixa, faça checkout da tag em vez do branch.
-
-## Princípios fundadores
-
-1. **Uma fonte da verdade.** Sempre. Sem duplicação.
-2. **Tokens são imutáveis localmente.** Se um projeto precisa de cor diferente, ela vira novo token no design system, não exceção.
-3. **Stack-agnóstico.** Tokens em CSS variables funcionam em qualquer framework.
-4. **Documentação executável.** Os arquivos não são só docs — Claude lê e aplica.
-5. **Glassmorphism com critério.** Modal e overlay sim, fundo grande não.
-6. **Acessibilidade não é opcional.** WCAG AA é o piso.
-
-## Próximos passos sugeridos
-
-Coisas que você pode adicionar conforme amadurece o sistema:
-
-- [ ] Pasta `examples/` com screenshots de boas implementações
-- [ ] Pasta `snippets/` com código pronto de componentes-chave (KPICard, DataTable, etc.)
-- [ ] Storybook ou Ladle para visualizar componentes
-- [ ] Versionamento com changelog
-- [ ] Hooks padrão (`use-theme`, `use-sidebar-state`)
-- [ ] Validação visual via screenshot test (Playwright)
-- [ ] Light theme refinement (atualmente é uma adaptação do dark)
+O texto da página de LGPD em `reference/` é **placeholder estrutural**. Seu time
+jurídico deve revisar e substituir antes de publicar qualquer conteúdo de privacidade.

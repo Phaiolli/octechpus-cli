@@ -18,7 +18,7 @@ const __dirname = dirname(__filename)
 // CONFIG
 // ═══════════════════════════════════════════════════════════
 
-const VERSION = '2.7.0'
+const VERSION = '2.8.0'
 const TEMPLATES_DIR = join(__dirname, 'templates')
 const DESIGN_SYSTEM_TEMPLATES_DIR = join(TEMPLATES_DIR, 'design-system')
 const MANIFEST_PATH = '.octechpus/manifest.json'
@@ -213,7 +213,7 @@ function printHelp() {
   console.log(`    ${c('green', 'profile show <name>')}           Show resolved profile (after inheritance)`)
   console.log(`    ${c('green', 'profile current')}               Show active profile of current project`)
   console.log(`    ${c('green', 'profile switch <name>')}         Switch project to a different profile`)
-  console.log(`    ${c('green', 'design-system add')}             Add design system to project`)
+  console.log(`    ${c('green', 'design-system add')}             Add the Stratum design system to project`)
   console.log(`    ${c('green', 'design-system update')}          Sync design-system/ with latest`)
   console.log(`    ${c('green', 'help')}                          Show this message`)
   console.log('')
@@ -223,7 +223,7 @@ function printHelp() {
   console.log(`    ${c('yellow', '--force')}                Overwrite without asking`)
   console.log(`    ${c('yellow', '--minimal')}              Core .claude/ only: commands + settings + agents (no docs/github)`)
   console.log(`    ${c('yellow', '--dry-run')}              Preview without writing`)
-  console.log(`    ${c('yellow', '--with-design-system')}   Scaffold a local design-system/ starter (optional)`)
+  console.log(`    ${c('yellow', '--with-design-system')}   Scaffold the Stratum design-system/ starter (optional)`)
   console.log(`    ${c('yellow', '--keep-customizations')}  Update preserves edited files ${c('dim', '(default: true)')}`)
   console.log('')
   console.log(`  ${bold('Examples:')}`)
@@ -291,11 +291,18 @@ function getDesignSystemExcludes(profile) {
   const tokensMode = profile?.design_system?.tokens ?? 'none'
   const exclude = new Set()
   if (tokensMode === 'none') {
-    exclude.add('tokens/tailwind.preset.js')
+    // No tokens at all: ship only the docs + visual reference, no build artifacts.
+    exclude.add('tokens/tailwind.preset.ts')
     exclude.add('tokens/tokens.css')
+    exclude.add('tokens/tokens.ts')
+    exclude.add('tokens/tokens.json')
   } else if (tokensMode === 'css-only') {
-    exclude.add('tokens/tailwind.preset.js')
+    // CSS variables only: keep tokens.css + the DTCG source, drop the Tailwind
+    // preset and the TS object form (those assume a Tailwind/TS pipeline).
+    exclude.add('tokens/tailwind.preset.ts')
+    exclude.add('tokens/tokens.ts')
   }
+  // tokensMode === 'tailwind': ship everything (json + css + ts + preset).
   return exclude
 }
 
@@ -571,9 +578,9 @@ async function commandInit(targetDir, options = {}) {
     console.log('')
   }
 
-  // Designer is stack-agnostic and does NOT ship a prebuilt design system: it
-  // applies UX/UI best practices and asks for the Claude Design design system at
-  // runtime. A local starter is opt-in via --with-design-system (or `design-system add`).
+  // Designer is stack-agnostic. The bundled Stratum starter is opt-in via
+  // --with-design-system (or `design-system add`); without it, the Designer
+  // reads whatever design system the project already provides at runtime.
   if (withDesignSystem) {
     console.log(bold('  Design System (design-system/)'))
     const destDesignSystem = join(projectDir, 'design-system')
@@ -583,7 +590,7 @@ async function commandInit(targetDir, options = {}) {
     console.log('')
   } else {
     console.log(bold('  Design System'))
-    console.log(`  ${c('dim', 'skipped — Designer requests the Claude Design design system at runtime')}`)
+    console.log(`  ${c('dim', 'skipped — add the bundled Stratum starter anytime')}`)
     console.log(`  ${c('dim', 'want a local starter? run')} ${c('cyan', 'npx octechpus design-system add')}`)
     console.log('')
   }
