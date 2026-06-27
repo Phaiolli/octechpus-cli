@@ -3,6 +3,7 @@ name: node-javascript
 description: "Node.js puro em JavaScript (ESM/CJS) — sem TypeScript (Vitest + JSDoc)"
 tags: [backend, api, cli, javascript, node]
 when_to_use: "projeto Node sem TypeScript (sem tsconfig); CLIs, scripts e serviços em JS"
+example_project: "Um script que importa planilhas ou um bot de Discord simples"
 
 language: javascript
 runtime: "node>=18"

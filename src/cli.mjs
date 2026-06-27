@@ -5,11 +5,12 @@ import { join, resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { execSync } from 'child_process'
 import { createHash } from 'crypto'
-import { c, bold, printBanner, ask } from './lib/prompts.mjs'
+import { c, bold, printBanner, ask, createAsker } from './lib/prompts.mjs'
 import { ensureDir, writeFile, copyDir, fileExists, fileCreated, fileSkipped } from './lib/file-ops.mjs'
 import { listProfiles, resolveProfile, validateProfile } from './lib/profile-loader.mjs'
 import { renderTemplate } from './lib/template-renderer.mjs'
 import { detectStack } from './lib/stack-detector.mjs'
+import { ADVISOR_QUESTIONS, recommendProfile } from './lib/profile-advisor.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -18,7 +19,7 @@ const __dirname = dirname(__filename)
 // CONFIG
 // ═══════════════════════════════════════════════════════════
 
-const VERSION = '2.8.0'
+const VERSION = '2.9.0'
 const TEMPLATES_DIR = join(__dirname, 'templates')
 const DESIGN_SYSTEM_TEMPLATES_DIR = join(TEMPLATES_DIR, 'design-system')
 const MANIFEST_PATH = '.octechpus/manifest.json'
@@ -361,11 +362,35 @@ async function selectProfile(projectDir, stackFlag, { askFn = ask, describeFile 
     console.log(`    ${c('dim', `${i + 1}.`)} ${c('cyan', p.name.padEnd(18))} ${c('dim', p.description || '')}`)
     const hint = p.when_to_use || (p.tags?.length ? p.tags.join(', ') : '')
     if (hint) console.log(`        ${c('dim', `↳ ${hint}`)}`)
+    if (p.example_project) console.log(`        ${c('dim', `💡 Ex.: ${p.example_project}`)}`)
   })
   console.log(`  ${c('dim', 'Em dúvida ou stack mista? use')} ${c('cyan', 'generic')}`)
+  console.log(`  ${c('dim', 'Não sabe escolher? digite')} ${c('cyan', '?')} ${c('dim', 'para responder 5 perguntas e receber uma recomendação.')}`)
   console.log('')
 
-  const answer = await askFn(`  Select profile (name or 1-${profiles.length}): `)
+  const answer = await askFn(`  Select profile (name, 1-${profiles.length}, or '?' to be guided): `)
+  const trimmed = answer.trim()
+
+  if (trimmed === '?' || trimmed === 'guia' || trimmed === 'guiar' || trimmed === 'guided' || trimmed === 'ajuda' || trimmed === 'ajudar') {
+    const guided = await runGuidedSelection(profiles, askFn)
+    if (guided) {
+      try {
+        return resolveProfile(guided)
+      } catch {
+        console.error(c('red', `  ✗ Unknown profile: "${guided}"`))
+        process.exit(1)
+      }
+    }
+    // guided cancelled → fall back to a plain prompt
+    const retry = await askFn(`  Select profile (name or 1-${profiles.length}): `)
+    return resolveSelectedProfile(retry, profiles)
+  }
+
+  return resolveSelectedProfile(answer, profiles)
+}
+
+// Resolve a raw answer (number or name) to a validated profile, or exit.
+function resolveSelectedProfile(answer, profiles) {
   const trimmed = answer.trim()
   const num = parseInt(trimmed, 10)
   const profileName = !isNaN(num) && num >= 1 && num <= profiles.length
@@ -385,6 +410,60 @@ async function selectProfile(projectDir, stackFlag, { askFn = ask, describeFile 
   }
 }
 
+/**
+ * Modo guiado: o usuário descreve o projeto e responde 5 perguntas; o CLI
+ * recomenda um profile via scoring determinístico (sem rede/LLM). Devolve o
+ * nome do profile escolhido, ou null se o usuário pedir para voltar à lista.
+ */
+async function runGuidedSelection(profiles, askFn) {
+  console.log('')
+  console.log(`  ${c('blue', '🧭')} ${bold('Modo guiado')} ${c('dim', '— responda e eu recomendo a stack (você confirma no final).')}`)
+  console.log('')
+
+  const description = await askFn(`  Em poucas palavras, o que você vai construir? (opcional, Enter pula): `)
+  console.log('')
+
+  const answers = {}
+  for (const q of ADVISOR_QUESTIONS) {
+    console.log(`  ${bold(q.prompt)}`)
+    for (const opt of q.options) {
+      console.log(`    ${c('cyan', opt.key)}. ${opt.label}`)
+    }
+    const raw = await askFn(`  Resposta (Enter pula): `)
+    const picked = q.options.find(o => o.key === raw.trim())
+    if (picked) answers[q.id] = picked
+    console.log('')
+  }
+
+  const rec = recommendProfile(answers, profiles, { description })
+
+  console.log(`  ${c('green', '✓')} Recomendação: ${c('cyan', bold(rec.name))}`)
+  console.log(`  ${c('dim', rec.rationale)}`)
+  const top = rec.ranked.filter(r => r.score > 0).slice(0, 3)
+  if (top.length > 1) {
+    console.log('')
+    console.log(`  ${c('dim', 'Mais prováveis:')}`)
+    for (const r of top) {
+      const p = profiles.find(x => x.name === r.name)
+      console.log(`    ${c('cyan', r.name.padEnd(18))} ${c('dim', p?.example_project || p?.description || '')}`)
+    }
+  }
+  console.log('')
+
+  const confirm = await askFn(`  Usar ${bold(rec.name)}? (Enter = sim · digite outro nome/número · 'n' = ver lista): `)
+  const t = confirm.trim()
+  if (!t || t === 'y' || t === 's' || t === 'sim' || t === 'yes') return rec.name
+  if (t === 'n' || t === 'não' || t === 'nao' || t === 'no') return null
+
+  const num = parseInt(t, 10)
+  if (!isNaN(num) && num >= 1 && num <= profiles.length) return profiles[num - 1].name
+  if (profiles.some(p => p.name === t)) return t
+
+  // resposta não reconhecida → mantém a recomendação
+  console.log(`  ${c('yellow', '?')} Não reconheci "${t}" — usando a recomendação ${c('cyan', rec.name)}.`)
+  return rec.name
+}
+
 // ═══════════════════════════════════════════════════════════
 // COMMANDS
 // ═══════════════════════════════════════════════════════════
@@ -392,7 +471,7 @@ async function selectProfile(projectDir, stackFlag, { askFn = ask, describeFile 
 async function commandInit(targetDir, options = {}) {
   const {
     force = false, minimal = false, dryRun = false,
-    withDesignSystem = false, stack = null, describe = null, askFn = ask,
+    withDesignSystem = false, stack = null, describe = null, askFn = null,
   } = options
 
   printBanner(VERSION)
@@ -410,7 +489,16 @@ async function commandInit(targetDir, options = {}) {
   }
   console.log('')
 
-  const profile = await selectProfile(projectDir, stack, { askFn, describeFile: describe })
+  // A seleção pode encadear vários prompts (auto-detect → guiado, 5+ perguntas).
+  // Um asker único mantém o mesmo readline aberto entre eles, para o input não se
+  // perder quando o stdin é um pipe. Quando askFn é injetado (testes), usa-o direto.
+  const asker = askFn ? null : createAsker()
+  let profile
+  try {
+    profile = await selectProfile(projectDir, stack, { askFn: askFn || asker.ask, describeFile: describe })
+  } finally {
+    asker?.close()
+  }
   console.log(`  ${c('green', '✓')} Profile: ${c('cyan', profile.name)}`)
   console.log('')
 
@@ -1034,6 +1122,7 @@ async function commandProfile(subcommand, profileArg, targetDir) {
         console.log(`  ${c('cyan', p.name.padEnd(18))} ${c('dim', p.description || '')}`)
         const hint = p.when_to_use || (p.tags?.length ? p.tags.join(', ') : '')
         if (hint) console.log(`  ${' '.repeat(18)} ${c('dim', `↳ ${hint}`)}`)
+        if (p.example_project) console.log(`  ${' '.repeat(18)} ${c('dim', `💡 Ex.: ${p.example_project}`)}`)
       }
       console.log('')
       console.log(`  ${c('dim', 'Use:')} npx octechpus init --stack=<name>`)

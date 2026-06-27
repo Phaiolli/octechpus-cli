@@ -3,6 +3,7 @@ name: ruby-rails
 description: "Ruby on Rails (RSpec + FactoryBot + RuboCop)"
 tags: [backend, api, web, ruby, rails]
 when_to_use: "aplicações Rails (Gemfile com rails)"
+example_project: "Um MVP rápido de startup: marketplace ou rede social"
 
 language: ruby
 runtime: "ruby>=3.2"

@@ -3,6 +3,7 @@ name: go-api
 description: "Go HTTP API (chi or stdlib + testify)"
 tags: [backend, api, go, systems]
 when_to_use: "APIs/serviços em Go (go.mod)"
+example_project: "Um serviço de alta performance: encurtador de links ou gateway de pagamentos"
 
 language: go
 runtime: "go>=1.21"

@@ -3,6 +3,7 @@ name: dotnet-api
 description: "C# + ASP.NET Core (xUnit + FluentValidation + NuGet)"
 tags: [backend, api, csharp, dotnet, enterprise]
 when_to_use: "APIs e serviços em C#/.NET (arquivos .csproj/.sln)"
+example_project: "O backend corporativo de uma seguradora ou um sistema de gestão em C#"
 
 language: csharp
 runtime: "dotnet>=8"

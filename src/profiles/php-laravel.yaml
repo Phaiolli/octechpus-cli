@@ -3,6 +3,7 @@ name: php-laravel
 description: "PHP + Laravel (Pest/PHPUnit + PHPStan + Pint)"
 tags: [backend, api, web, php, laravel]
 when_to_use: "aplicações Laravel (composer.json com laravel/*)"
+example_project: "Um e-commerce, sistema de assinaturas ou painel de um SaaS"
 
 language: php
 runtime: "php>=8.2"

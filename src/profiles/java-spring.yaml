@@ -3,6 +3,7 @@ name: java-spring
 description: "Java + Spring Boot (JUnit 5 + Bean Validation + Maven/Gradle)"
 tags: [backend, api, java, enterprise]
 when_to_use: "APIs e serviços em Java com Spring Boot (pom.xml ou build.gradle)"
+example_project: "O sistema interno de um banco ou grande empresa (ERP, folha de pagamento)"
 
 language: java
 runtime: "java>=17"

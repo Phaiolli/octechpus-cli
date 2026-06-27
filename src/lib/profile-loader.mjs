@@ -20,16 +20,23 @@ export function listProfiles() {
           description: raw.description || '',
           tags: raw.tags || [],
           when_to_use: raw.when_to_use || '',
+          example_project: raw.example_project || '',
           file: f,
         }
       } catch {
-        return { name, description: '', tags: [], when_to_use: '', file: f }
+        return { name, description: '', tags: [], when_to_use: '', example_project: '', file: f }
       }
     })
 }
 
 export function loadProfile(name) {
   if (cache.has(name)) return cache.get(name)
+
+  // Profile names are a closed set of slugs. Reject anything else BEFORE building
+  // a path, so a crafted name (e.g. "../../etc/passwd") can never escape PROFILES_DIR.
+  if (typeof name !== 'string' || !/^[a-z0-9_-]+$/.test(name)) {
+    throw new Error(`Profile not found: "${name}" (invalid profile name)`)
+  }
 
   const filepath = join(PROFILES_DIR, `${name}.yaml`)
   if (!existsSync(filepath)) {

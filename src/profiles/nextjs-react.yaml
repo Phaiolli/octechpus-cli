@@ -3,6 +3,7 @@ name: nextjs-react
 description: "Next.js + React + Tailwind + shadcn/ui"
 tags: [frontend, web, react, nextjs, typescript]
 when_to_use: "apps Next.js / React (dep next ou next.config.*)"
+example_project: "O site/loja de uma empresa, um blog ou um painel administrativo na web"
 
 agents:
   designer: true

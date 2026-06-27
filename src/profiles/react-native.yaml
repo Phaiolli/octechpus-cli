@@ -3,6 +3,7 @@ name: react-native
 description: "React Native / Expo (TypeScript + Jest) — com Designer ativo"
 tags: [mobile, frontend, react-native, expo, typescript]
 when_to_use: "apps mobile React Native ou Expo (dependência react-native/expo)"
+example_project: "O aplicativo de celular (iOS/Android) de uma academia ou banco"
 
 testing:
   framework: jest

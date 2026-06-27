@@ -3,6 +3,7 @@ name: vue-nuxt
 description: "Vue 3 + Nuxt (Tailwind + Vitest) — com Designer ativo"
 tags: [frontend, web, vue, nuxt, typescript]
 when_to_use: "apps Vue 3 / Nuxt (nuxt.config.* ou dependência vue/nuxt)"
+example_project: "A landing page de um produto ou um site institucional"
 
 frontend:
   framework: nuxt3

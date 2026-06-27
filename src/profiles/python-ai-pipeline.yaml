@@ -3,6 +3,7 @@ name: python-ai-pipeline
 description: "Python AI/ML pipeline com LLMs (FastAPI + workers + providers) — Cost Engineer ativo"
 tags: [ai, ml, backend, python, llm]
 when_to_use: "pipelines de IA/LLM em Python (fastapi + anthropic/openai/langchain)"
+example_project: "Um chatbot com IA, um resumidor de documentos ou classificador com LLMs"
 
 agents:
   cost_engineer: true

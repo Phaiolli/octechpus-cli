@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.0] - 2026-06-27
+
+### Added
+- **Campo `example_project` nos profiles** — cada profile agora traz um exemplo de
+  projeto em linguagem leiga (PT), para que um usuário não-técnico saiba "para que
+  serve" cada stack. Aparece como uma linha `💡 Ex.:` abaixo da dica técnica
+  (`↳ when_to_use`) tanto na seleção interativa do `init` quanto em `profile list`.
+  Ex.: `react-native → "O aplicativo de celular (iOS/Android) de uma academia ou banco"`.
+- **Modo guiado de escolha de profile** — na seleção manual do `init`, digite `?`
+  para descrever o projeto e responder 5 perguntas; o CLI recomenda um profile com
+  justificativa e pede confirmação. A recomendação é 100% **determinística** (sistema
+  de pontuação sobre as `tags` dos profiles + sua descrição) — sem rede e sem LLM,
+  coerente com o CLI rodar via `npx`. Lógica isolada em `src/lib/profile-advisor.mjs`.
+
+### Changed
+- **`createAsker()` em `lib/prompts.mjs`** — prompter com um único `readline`
+  bufferizado, usado na fase de seleção do `init`. Substitui o padrão de abrir/fechar
+  um `readline` por pergunta, que perdia o input em fluxos com múltiplos prompts
+  quando o stdin é um pipe.
+
+### Security
+- **Hardening em `loadProfile`** — nome de profile agora é validado contra
+  `^[a-z0-9_-]+$` antes de compor o caminho do arquivo, eliminando qualquer
+  possibilidade de path traversal a partir de input do usuário (defense-in-depth).
+
+### Docs
+- ADR `003-profile-advisor-e-example-project.md` documentando as duas decisões.
+
 ## [2.8.0] - 2026-06-23
 
 ### Changed

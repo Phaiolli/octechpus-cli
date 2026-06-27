@@ -1,6 +1,7 @@
 extends: _base
 name: generic
 description: "Stack-agnostic fallback — any language/framework, relaxed rules (use when no specific profile fits)"
+example_project: "Qualquer projeto que não se encaixa acima, ou que mistura linguagens"
 
 # Use this profile when:
 #   - the project mixes several languages (monorepo, polyglot)
