@@ -3,6 +3,7 @@ name: python-cli
 description: "Python CLI tool (Click/Typer + pytest)"
 tags: [cli, python]
 when_to_use: "ferramentas de linha de comando em Python (dep click/typer)"
+example_project: "Uma ferramenta de terminal que gera relatórios ou organiza arquivos"
 
 testing:
   e2e: null

@@ -18,6 +18,16 @@ describe('loadProfile', () => {
   it('throws for a non-existent profile', () => {
     expect(() => loadProfile('does-not-exist')).toThrow(/Profile not found/)
   })
+
+  it('rejects a path-traversal name before touching the filesystem', () => {
+    expect(() => loadProfile('../../etc/passwd')).toThrow(/Profile not found/)
+    expect(() => loadProfile('foo/bar')).toThrow(/Profile not found/)
+    expect(() => loadProfile('')).toThrow(/Profile not found/)
+  })
+
+  it('still loads _base (underscore name is allowed)', () => {
+    expect(loadProfile('_base').name).toBe('_base')
+  })
 })
 
 describe('resolveProfile', () => {
@@ -148,5 +158,11 @@ describe('listProfiles', () => {
     for (const n of ['generic', 'node-javascript', 'java-spring', 'dotnet-api', 'ruby-rails', 'php-laravel', 'vue-nuxt', 'react-native']) {
       expect(names).toContain(n)
     }
+  })
+
+  it('every selectable profile exposes a non-empty example_project (plain-language hint)', () => {
+    const profiles = listProfiles()
+    const missing = profiles.filter(p => !p.example_project || !p.example_project.trim())
+    expect(missing.map(p => p.name)).toEqual([])
   })
 })

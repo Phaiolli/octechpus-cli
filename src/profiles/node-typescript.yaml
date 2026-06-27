@@ -3,6 +3,7 @@ name: node-typescript
 description: "Node.js + TypeScript (Vitest + Zod + TSDoc)"
 tags: [backend, api, cli, typescript, node]
 when_to_use: "serviços/CLIs/libs em Node com TypeScript (tsconfig ou dep typescript)"
+example_project: "Backend de um app de delivery ou uma ferramenta de terminal typada"
 
 language: typescript
 runtime: "node>=18"

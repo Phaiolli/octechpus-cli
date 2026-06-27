@@ -3,6 +3,7 @@ name: python-fastapi
 description: "Python FastAPI backend with Pydantic v2 + pytest"
 tags: [backend, api, python]
 when_to_use: "APIs Python com FastAPI (dep fastapi)"
+example_project: "A API que alimenta um app de finanças ou um sistema de agendamento"
 
 language: python
 runtime: "python>=3.12"

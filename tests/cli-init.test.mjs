@@ -22,6 +22,12 @@ function makeTmpDir() {
   return mkdtempSync(join(tmpdir(), 'octechpus-test-'))
 }
 
+// eslint-disable-next-line no-control-regex
+const ANSI_RE = /\x1b\[[0-9;]*m/g
+function stripAnsi(s) {
+  return (s || '').replace(ANSI_RE, '')
+}
+
 // ── --stack flag ─────────────────────────────────────────────────────────────
 
 describe('init --stack=python-fastapi', () => {
@@ -125,6 +131,36 @@ describe('init — interactive profile selection (empty folder)', () => {
     const result = runCLI(['init'], { cwd: tmpDir, input: '1\n' })
     expect(result.status).toBe(0)
     expect(existsSync(join(tmpDir, 'CLAUDE.md'))).toBe(true)
+  })
+
+  it('shows the plain-language example (💡) for each profile in the list', () => {
+    tmpDir = makeTmpDir()
+    // pick generic to end the prompt; we only assert on the printed list above it
+    const result = runCLI(['init', '--dry-run'], { cwd: tmpDir, input: 'generic\n' })
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('💡 Ex.:')
+    expect(result.stdout).toContain('O aplicativo de celular')
+  })
+
+  it('guided mode ("?") asks 5 questions and recommends a matching profile', () => {
+    tmpDir = makeTmpDir()
+    // ? → describe → product=2(mobile) → lang=1(JS/TS) → perf=2 → ent=2 → mixed=2 → confirm(Enter)
+    const input = '?\num app de celular para academia\n2\n1\n2\n2\n2\n\n'
+    const result = runCLI(['init', '--dry-run'], { cwd: tmpDir, input })
+    const out = stripAnsi(result.stdout)
+    expect(result.status).toBe(0)
+    expect(out).toContain('Modo guiado')
+    expect(out).toMatch(/Recomendação:\s+react-native/)
+  })
+
+  it('guided mode recommends generic when the project is "mixed"', () => {
+    tmpDir = makeTmpDir()
+    // ? → (no describe) → product=3 → lang=9 → perf=2 → ent=2 → mixed=1(misto) → confirm
+    const input = '?\n\n3\n9\n2\n2\n1\n\n'
+    const result = runCLI(['init', '--dry-run'], { cwd: tmpDir, input })
+    const out = stripAnsi(result.stdout)
+    expect(result.status).toBe(0)
+    expect(out).toMatch(/Recomendação:\s+generic/)
   })
 })
 

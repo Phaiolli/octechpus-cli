@@ -3,6 +3,7 @@ name: rust-cli
 description: "Rust CLI tool (clap + tokio)"
 tags: [cli, rust, systems]
 when_to_use: "ferramentas de linha de comando em Rust (Cargo.toml + clap)"
+example_project: "Uma ferramenta de terminal que precisa ser muito rápida (busca de arquivos)"
 
 language: rust
 runtime: "rust>=1.75"
