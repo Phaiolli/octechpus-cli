@@ -96,8 +96,15 @@ function findByExt(dir, exts) {
   } catch { return null }
 }
 
+// Só as primeiras keywords importam para o scan; ler o arquivo inteiro seria
+// desperdício (e um vetor de DoS local se apontarem para um .md gigante).
+const MAX_DOC_BYTES = 256 * 1024
+
 function readText(filepath) {
-  try { return readFileSync(filepath, 'utf-8') } catch { return null }
+  try {
+    const buf = readFileSync(filepath)
+    return buf.slice(0, MAX_DOC_BYTES).toString('utf-8')
+  } catch { return null }
 }
 
 function hasDep(pkg, name) {

@@ -295,3 +295,26 @@ describe('privacy.md — compliance framework injection', () => {
     }
   })
 })
+
+// ── readiness.md ─────────────────────────────────────────────────────────────
+
+describe('readiness.md — Maestro readiness scorecard', () => {
+  it('renders without leftover {{…}} placeholders', () => {
+    const result = render('commands/readiness.md', 'node-typescript')
+    expect(result).not.toContain('{{')
+    expect(result).not.toContain('}}')
+  })
+
+  it('carries the canonical maestro.readiness/v1 contract and stable label', () => {
+    const result = render('commands/readiness.md', 'node-typescript')
+    expect(result).toContain('maestro.readiness/v1')
+    expect(result).toContain('maestro:readiness')
+  })
+
+  it('renders for every stack (readiness is stack-agnostic)', () => {
+    for (const p of ['python-fastapi', 'go-api', 'rust-cli', 'nextjs-react', 'generic']) {
+      const result = render('commands/readiness.md', p)
+      expect(result).toContain('maestro.readiness/v1')
+    }
+  })
+})

@@ -120,7 +120,8 @@ describe('init — interactive profile selection (empty folder)', () => {
 
   it('selects profile by name from piped stdin and creates correct CLAUDE.md', () => {
     tmpDir = makeTmpDir()
-    const result = runCLI(['init'], { cwd: tmpDir, input: 'python-fastapi\n' })
+    // 'a' = caminho "Projeto em andamento"; pasta vazia → detecção falha → lista
+    const result = runCLI(['init'], { cwd: tmpDir, input: 'a\npython-fastapi\n' })
     expect(result.status).toBe(0)
     const content = readFileSync(join(tmpDir, 'CLAUDE.md'), 'utf-8')
     expect(content).toContain('python-fastapi')
@@ -128,7 +129,7 @@ describe('init — interactive profile selection (empty folder)', () => {
 
   it('selects profile by number "1" from piped stdin', () => {
     tmpDir = makeTmpDir()
-    const result = runCLI(['init'], { cwd: tmpDir, input: '1\n' })
+    const result = runCLI(['init'], { cwd: tmpDir, input: 'a\n1\n' })
     expect(result.status).toBe(0)
     expect(existsSync(join(tmpDir, 'CLAUDE.md'))).toBe(true)
   })
@@ -136,7 +137,7 @@ describe('init — interactive profile selection (empty folder)', () => {
   it('shows the plain-language example (💡) for each profile in the list', () => {
     tmpDir = makeTmpDir()
     // pick generic to end the prompt; we only assert on the printed list above it
-    const result = runCLI(['init', '--dry-run'], { cwd: tmpDir, input: 'generic\n' })
+    const result = runCLI(['init', '--dry-run'], { cwd: tmpDir, input: 'a\ngeneric\n' })
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('💡 Ex.:')
     expect(result.stdout).toContain('O aplicativo de celular')
@@ -145,7 +146,7 @@ describe('init — interactive profile selection (empty folder)', () => {
   it('guided mode ("?") asks 5 questions and recommends a matching profile', () => {
     tmpDir = makeTmpDir()
     // ? → describe → product=2(mobile) → lang=1(JS/TS) → perf=2 → ent=2 → mixed=2 → confirm(Enter)
-    const input = '?\num app de celular para academia\n2\n1\n2\n2\n2\n\n'
+    const input = 'a\n?\num app de celular para academia\n2\n1\n2\n2\n2\n\n'
     const result = runCLI(['init', '--dry-run'], { cwd: tmpDir, input })
     const out = stripAnsi(result.stdout)
     expect(result.status).toBe(0)
@@ -156,11 +157,68 @@ describe('init — interactive profile selection (empty folder)', () => {
   it('guided mode recommends generic when the project is "mixed"', () => {
     tmpDir = makeTmpDir()
     // ? → (no describe) → product=3 → lang=9 → perf=2 → ent=2 → mixed=1(misto) → confirm
-    const input = '?\n\n3\n9\n2\n2\n1\n\n'
+    const input = 'a\n?\n\n3\n9\n2\n2\n1\n\n'
     const result = runCLI(['init', '--dry-run'], { cwd: tmpDir, input })
     const out = stripAnsi(result.stdout)
     expect(result.status).toBe(0)
     expect(out).toMatch(/Recomendação:\s+generic/)
+  })
+})
+
+// ── two-path selection (v2.10.0) ───────────────────────────────────────────────
+describe('init — two-path stack selection (v2.10.0)', () => {
+  let tmpDir
+
+  afterEach(() => {
+    if (tmpDir) rmSync(tmpDir, { recursive: true, force: true })
+  })
+
+  // fastapi(26) + pydantic(8) + uvicorn(6) = 40 → confiança alta → auto-aplica
+  const PID_FASTAPI = '# PID do Projeto\n\nBackend em Python usando FastAPI, com Pydantic para validação e Uvicorn como servidor ASGI.\n'
+
+  it('shows the two entry paths (A/B) instead of the long list upfront', () => {
+    tmpDir = makeTmpDir()
+    const out = stripAnsi(runCLI(['init', '--dry-run'], { cwd: tmpDir, input: 'a\ngeneric\n' }).stdout)
+    expect(out).toContain('Projeto em andamento')
+    expect(out).toContain('Projeto novo')
+  })
+
+  it('path B (new project) reads a PID .md and installs the ideal stack', () => {
+    tmpDir = makeTmpDir()
+    writeFileSync(join(tmpDir, 'pid.md'), PID_FASTAPI)
+    // 'b' → caminho novo; 'pid.md' → documento apontado
+    const result = runCLI(['init'], { cwd: tmpDir, input: 'b\npid.md\n' })
+    expect(result.status).toBe(0)
+    expect(readFileSync(join(tmpDir, 'CLAUDE.md'), 'utf-8')).toContain('python-fastapi')
+  })
+
+  it('--describe flag bypasses the menu and enters the new-project path', () => {
+    tmpDir = makeTmpDir()
+    writeFileSync(join(tmpDir, 'pid.md'), PID_FASTAPI)
+    const result = runCLI(['init', '--describe=pid.md'], { cwd: tmpDir })
+    expect(result.status).toBe(0)
+    expect(readFileSync(join(tmpDir, 'CLAUDE.md'), 'utf-8')).toContain('python-fastapi')
+  })
+
+  it('exits 1 when --describe points to a missing/invalid PID', () => {
+    tmpDir = makeTmpDir()
+    const result = runCLI(['init', '--describe=nope.md'], { cwd: tmpDir })
+    expect(result.status).toBe(1)
+    expect(stripAnsi(result.stderr + result.stdout)).toMatch(/PID inválido/)
+  })
+
+  it('--describe with a valid .md but no stack signal fails explicitly (no prompt)', () => {
+    tmpDir = makeTmpDir()
+    writeFileSync(join(tmpDir, 'vague.md'), '# Ideia\n\nUm projeto sobre coisas legais, sem detalhes técnicos.\n')
+    const result = runCLI(['init', '--describe=vague.md'], { cwd: tmpDir })
+    expect(result.status).toBe(1)
+    expect(stripAnsi(result.stderr + result.stdout)).toMatch(/não consegui inferir a stack/i)
+  })
+
+  it('installs the /readiness command on init', () => {
+    tmpDir = makeTmpDir()
+    runCLI(['init', '--stack=node-typescript'], { cwd: tmpDir })
+    expect(existsSync(join(tmpDir, '.claude/commands/readiness.md'))).toBe(true)
   })
 })
 

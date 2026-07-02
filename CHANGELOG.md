@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.0] - 2026-07-02
+
+### Added
+- **`init` com dois caminhos de entrada** — a seleção de stack deixa de exibir a
+  lista longa de profiles por padrão e passa a oferecer duas alternativas:
+  **(A) Projeto em andamento** — lê a base de código existente e auto-detecta a
+  stack coerente (`detectStack`); **(B) Projeto novo** — o usuário aponta um
+  documento PID (`.md`) e o CLI recomenda a stack ideal (`detectStack({ describeFile })`,
+  com fallback ao modo guiado determinístico). A lógica de detecção→resolução foi
+  extraída para `resolveDetectedProfile()`, reutilizada pelos dois caminhos. As
+  flags `--stack` e `--describe` continuam fazendo bypass do menu (retrocompatível).
+  Ver ADR `docs/adr/004-init-two-path-selection.md`.
+  ⚠️ **Breaking menor:** `--describe` agora é estritamente não-interativo — falha
+  com `exit 1` se o `.md` for inexistente/inválido **ou** se não houver sinal
+  suficiente para inferir a stack com confiança (antes caía silenciosamente na
+  detecção/prompt). Use `--stack=<profile>` para forçar. A detecção via docs `.md`
+  também passou a limitar a leitura a 256 KB (defense-in-depth).
+- **Comando `/readiness`** — gera um scorecard de prontidão técnica e o publica
+  numa Issue de Prontidão fixa (label estável `maestro:readiness`), no formato
+  `maestro.readiness/v1`, consumido pela plataforma Maestro. Aditivo e
+  retrocompatível; `npx octechpus update` instala o comando em projetos existentes.
+
 ## [2.9.0] - 2026-06-27
 
 ### Added
