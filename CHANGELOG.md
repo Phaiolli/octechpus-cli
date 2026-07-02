@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.11.0] - 2026-07-02
+
+### Added
+- **PID por nome no caminho B do `init`** — `--describe` e o prompt de "Projeto novo"
+  agora aceitam **apenas o nome** do documento (com ou sem `.md`) e o CLI **procura**
+  o arquivo: primeiro como caminho direto (absoluto ou relativo a `projectDir`/`cwd`);
+  se não achar, faz busca recursiva por nome (case-insensitive) em `projectDir` e `cwd`,
+  ignorando diretórios de ruído (`node_modules`, `.git`, `dist`, `build`, `.next`,
+  `coverage`, `.octechpus`, `vendor`, …) e ocultos, com profundidade ≤ 5. Um único
+  match é usado; múltiplos matches → erro listando os caminhos; nenhum → erro claro.
+  Lógica isolada em `resolvePidDocument()` (pura, testável). `--describe` segue
+  estritamente não-interativo (exit 1 em erro).
+
 ## [2.10.0] - 2026-07-02
 
 ### Added

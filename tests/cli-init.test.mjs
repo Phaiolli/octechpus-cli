@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { spawnSync } from 'child_process'
-import { mkdtempSync, rmSync, readFileSync, writeFileSync, existsSync } from 'fs'
+import { mkdtempSync, rmSync, readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { tmpdir } from 'os'
@@ -204,7 +204,52 @@ describe('init — two-path stack selection (v2.10.0)', () => {
     tmpDir = makeTmpDir()
     const result = runCLI(['init', '--describe=nope.md'], { cwd: tmpDir })
     expect(result.status).toBe(1)
-    expect(stripAnsi(result.stderr + result.stdout)).toMatch(/PID inválido/)
+    expect(stripAnsi(result.stderr + result.stdout)).toMatch(/não encontrado/i)
+  })
+
+  it('--describe finds the PID by name only (no path, no .md extension)', () => {
+    tmpDir = makeTmpDir()
+    // PID em subpasta, informado só pelo nome e sem extensão
+    mkdirSync(join(tmpDir, 'docs'), { recursive: true })
+    writeFileSync(join(tmpDir, 'docs', 'pid.md'), PID_FASTAPI)
+    const result = runCLI(['init', '--describe=pid'], { cwd: tmpDir })
+    expect(result.status).toBe(0)
+    expect(readFileSync(join(tmpDir, 'CLAUDE.md'), 'utf-8')).toContain('python-fastapi')
+  })
+
+  it('--describe by name is ambiguous when multiple .md share the name → exit 1', () => {
+    tmpDir = makeTmpDir()
+    mkdirSync(join(tmpDir, 'a'), { recursive: true })
+    mkdirSync(join(tmpDir, 'b'), { recursive: true })
+    writeFileSync(join(tmpDir, 'a', 'pid.md'), PID_FASTAPI)
+    writeFileSync(join(tmpDir, 'b', 'pid.md'), PID_FASTAPI)
+    const result = runCLI(['init', '--describe=pid'], { cwd: tmpDir })
+    expect(result.status).toBe(1)
+    expect(stripAnsi(result.stderr + result.stdout)).toMatch(/mais de um/i)
+  })
+
+  it('interactive path B with an ambiguous name falls back to guided mode', () => {
+    tmpDir = makeTmpDir()
+    mkdirSync(join(tmpDir, 'x'), { recursive: true })
+    mkdirSync(join(tmpDir, 'y'), { recursive: true })
+    writeFileSync(join(tmpDir, 'x', 'pid.md'), PID_FASTAPI)
+    writeFileSync(join(tmpDir, 'y', 'pid.md'), PID_FASTAPI)
+    // b → nome ambíguo → cai no modo guiado (não sai com erro no modo interativo)
+    const input = 'b\npid\n?\n\n3\n9\n2\n2\n1\n\n'
+    const out = stripAnsi(runCLI(['init', '--dry-run'], { cwd: tmpDir, input }).stdout)
+    expect(out).toMatch(/Mais de um "pid"/)
+    expect(out).toContain('Modo guiado')
+  })
+
+  it('ignores noise dirs (node_modules) when searching the PID by name', () => {
+    tmpDir = makeTmpDir()
+    mkdirSync(join(tmpDir, 'node_modules', 'pkg'), { recursive: true })
+    writeFileSync(join(tmpDir, 'node_modules', 'pkg', 'pid.md'), PID_FASTAPI)
+    writeFileSync(join(tmpDir, 'pid.md'), PID_FASTAPI)
+    // só o pid.md fora de node_modules deve contar → sem ambiguidade
+    const result = runCLI(['init', '--describe=pid'], { cwd: tmpDir })
+    expect(result.status).toBe(0)
+    expect(readFileSync(join(tmpDir, 'CLAUDE.md'), 'utf-8')).toContain('python-fastapi')
   })
 
   it('--describe with a valid .md but no stack signal fails explicitly (no prompt)', () => {
