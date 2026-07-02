@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync, writeFileSync, readdirSync } from 'fs'
+import { existsSync, readFileSync, writeFileSync, readdirSync, statSync } from 'fs'
 import { join, resolve, dirname, isAbsolute } from 'path'
 import { fileURLToPath } from 'url'
 import { execSync } from 'child_process'
@@ -19,7 +19,7 @@ const __dirname = dirname(__filename)
 // CONFIG
 // ═══════════════════════════════════════════════════════════
 
-const VERSION = '2.10.0'
+const VERSION = '2.11.0'
 const TEMPLATES_DIR = join(__dirname, 'templates')
 const DESIGN_SYSTEM_TEMPLATES_DIR = join(TEMPLATES_DIR, 'design-system')
 const MANIFEST_PATH = '.octechpus/manifest.json'
@@ -350,42 +350,114 @@ async function selectForExistingProject(projectDir, { askFn = ask } = {}) {
   return resolveDetectedProfile(detectStack(projectDir), { askFn })
 }
 
+// Diretórios de ruído que a busca por nome do PID ignora, e profundidade máxima.
+const PID_SEARCH_IGNORE = new Set([
+  'node_modules', '.git', 'dist', 'build', '.next', 'coverage', '.octechpus', 'vendor', 'out', '.cache',
+])
+const PID_SEARCH_MAX_DEPTH = 5
+
+// Busca recursiva por basename: acumula em `found` os caminhos de arquivos .md
+// cujo nome (lowercase) esteja em `wanted`. Ignora ruído e diretórios ocultos.
+function searchPidByName(dir, wanted, depth, found) {
+  if (depth > PID_SEARCH_MAX_DEPTH) return
+  let entries
+  try { entries = readdirSync(dir, { withFileTypes: true }) } catch { return }
+  for (const e of entries) {
+    if (e.isDirectory()) {
+      if (PID_SEARCH_IGNORE.has(e.name) || e.name.startsWith('.')) continue
+      searchPidByName(join(dir, e.name), wanted, depth + 1, found)
+    } else if (e.isFile()) {
+      const nameLower = e.name.toLowerCase()
+      if (nameLower.endsWith('.md') && wanted.has(nameLower)) found.add(join(dir, e.name))
+    }
+  }
+}
+
+/**
+ * Resolve um nome-ou-caminho de PID para um arquivo .md concreto.
+ * Ordem: (1) caminho direto (absoluto, ou relativo a projectDir/cwd);
+ * (2) busca por basename (case-insensitive, com/sem .md) em projectDir e cwd.
+ * @returns {{path: string} | {matches: string[]} | null}
+ */
+function resolvePidDocument(nameOrPath, projectDir, cwd = process.cwd()) {
+  const raw = (nameOrPath || '').trim()
+  if (!raw) return null
+
+  // (1) caminho direto — mantém retrocompat de quem já passa um caminho válido.
+  const direct = isAbsolute(raw)
+    ? [raw]
+    : (cwd === projectDir ? [join(projectDir, raw)] : [join(projectDir, raw), join(cwd, raw)])
+  for (const p of direct) {
+    if (p.toLowerCase().endsWith('.md') && existsSync(p) && statSync(p).isFile()) return { path: p }
+  }
+
+  // (2) busca por nome — usa só o basename do que foi digitado (uma eventual dica de
+  // subpasta é ignorada). A busca casa apenas arquivos .md, então normalizamos para a
+  // forma com extensão.
+  const base = raw.replace(/\\/g, '/').split('/').pop().toLowerCase()
+  if (!base) return null
+  const wanted = new Set([base.endsWith('.md') ? base : `${base}.md`])
+
+  // Varre projectDir e cwd. No pior caso (rodar de um diretório pai grande) o custo é
+  // limitado por PID_SEARCH_MAX_DEPTH + a ignore-list + o skip de diretórios ocultos.
+  const found = new Set()
+  const roots = cwd === projectDir ? [projectDir] : [projectDir, cwd]
+  for (const root of roots) searchPidByName(root, wanted, 0, found)
+
+  const matches = [...found]
+  if (matches.length === 1) return { path: matches[0] }
+  if (matches.length > 1) return { matches }
+  return null
+}
+
 // Caminho B — projeto novo: lê um documento PID (.md) e recomenda a stack ideal.
 // `describeFile` pode vir da flag --describe (não-interativo) ou ser pedido ao
-// usuário. PID inválido via flag → erro explícito; via prompt → cai no modo guiado.
+// usuário. Aceita apenas o NOME do arquivo — o CLI procura o .md (ver
+// resolvePidDocument). Erro via flag → exit 1; via prompt → cai no modo guiado.
 async function selectForNewProject(projectDir, describeFile, { askFn = ask } = {}) {
   let pid = describeFile
   if (!pid) {
-    pid = (await askFn(`  Caminho do documento PID (.md): `)).trim()
+    pid = (await askFn(`  Nome ou caminho do documento PID (.md): `)).trim()
   }
 
-  const resolvedPid = pid ? (isAbsolute(pid) ? pid : join(projectDir, pid)) : null
-  const validPid = pid && pid.toLowerCase().endsWith('.md') && resolvedPid && existsSync(resolvedPid)
+  const resolution = resolvePidDocument(pid, projectDir)
 
-  if (!validPid) {
-    if (describeFile) {
-      // veio de --describe → falha previsível para uso em scripts
-      console.error(c('red', `  ✗ Documento PID inválido ou não encontrado: "${pid}"`))
-      console.error(c('dim', `  Aponte um arquivo .md existente via --describe=<arquivo.md>.`))
-      process.exit(1)
+  if (resolution?.path) {
+    return resolveDetectedProfile(
+      detectStack(projectDir, { describeFile: resolution.path }),
+      { askFn, nonInteractive: !!describeFile },
+    )
+  }
+
+  // Não resolveu para um único arquivo (nenhum, ou ambíguo).
+  const ambiguous = resolution?.matches
+  if (describeFile) {
+    if (ambiguous) {
+      console.error(c('red', `  ✗ Mais de um documento "${pid}" encontrado — especifique o caminho:`))
+      for (const m of ambiguous) console.error(c('dim', `     • ${m}`))
+    } else {
+      console.error(c('red', `  ✗ Documento PID não encontrado: "${pid}"`))
+      console.error(c('dim', `  Passe o nome do arquivo .md (ex.: --describe=pid.md) ou um caminho.`))
     }
+    process.exit(1)
+  }
+
+  if (ambiguous) {
+    console.log(`  ${c('yellow', '?')} Mais de um "${pid}" encontrado — vou te guiar por perguntas.`)
+    for (const m of ambiguous) console.log(c('dim', `     • ${m}`))
+  } else {
     console.log(`  ${c('yellow', '?')} PID não encontrado — vou te guiar por perguntas.`)
-    console.log('')
-    const profiles = listProfiles()
-    const guided = await runGuidedSelection(profiles, askFn)
-    if (guided) {
-      try {
-        return resolveProfile(guided)
-      } catch { /* nome inválido → cai no prompt abaixo */ }
-    }
-    const retry = await askFn(`  Select profile (name or 1-${profiles.length}): `)
-    return resolveSelectedProfile(retry, profiles)
   }
-
-  return resolveDetectedProfile(
-    detectStack(projectDir, { describeFile: resolvedPid }),
-    { askFn, nonInteractive: !!describeFile },
-  )
+  console.log('')
+  const profiles = listProfiles()
+  const guided = await runGuidedSelection(profiles, askFn)
+  if (guided) {
+    try {
+      return resolveProfile(guided)
+    } catch { /* nome inválido → cai no prompt abaixo */ }
+  }
+  const retry = await askFn(`  Select profile (name or 1-${profiles.length}): `)
+  return resolveSelectedProfile(retry, profiles)
 }
 
 // Resolve o resultado de detectStack() em um profile: alta confiança auto-aplica,

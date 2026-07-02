@@ -44,6 +44,11 @@ npx octechpus init --stack=python-fastapi
 npx octechpus init --describe=docs/pid.md
 ```
 
+> 💡 **Não precisa do caminho completo.** Basta o **nome** do arquivo (com ou sem
+> `.md`) — o CLI procura o documento em `projectDir` e no diretório atual, ignorando
+> `node_modules`, `.git`, `dist`, etc. Ex.: `--describe=pid`. Se houver mais de um
+> arquivo com o mesmo nome, o CLI lista os caminhos e pede para você especificar.
+
 Na detecção (caminhos A e B), o CLI inspeciona manifests (`package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, `pom.xml`/`build.gradle`, `*.csproj`/`*.sln`, `Gemfile`, `composer.json`) **e também documentos `.md`** (o PID no caminho B; `README.md`, `PROJECT.md`, `ARCHITECTURE.md`, etc. no caminho A):
 - **Alta confiança** → aplica o profile imediatamente
 - **Confiança média** → pede confirmação antes de aplicar
