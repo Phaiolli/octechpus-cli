@@ -207,6 +207,14 @@ describe('init — two-path stack selection (v2.10.0)', () => {
     expect(stripAnsi(result.stderr + result.stdout)).toMatch(/PID inválido/)
   })
 
+  it('--describe with a valid .md but no stack signal fails explicitly (no prompt)', () => {
+    tmpDir = makeTmpDir()
+    writeFileSync(join(tmpDir, 'vague.md'), '# Ideia\n\nUm projeto sobre coisas legais, sem detalhes técnicos.\n')
+    const result = runCLI(['init', '--describe=vague.md'], { cwd: tmpDir })
+    expect(result.status).toBe(1)
+    expect(stripAnsi(result.stderr + result.stdout)).toMatch(/não consegui inferir a stack/i)
+  })
+
   it('installs the /readiness command on init', () => {
     tmpDir = makeTmpDir()
     runCLI(['init', '--stack=node-typescript'], { cwd: tmpDir })

@@ -382,12 +382,17 @@ async function selectForNewProject(projectDir, describeFile, { askFn = ask } = {
     return resolveSelectedProfile(retry, profiles)
   }
 
-  return resolveDetectedProfile(detectStack(projectDir, { describeFile: resolvedPid }), { askFn })
+  return resolveDetectedProfile(
+    detectStack(projectDir, { describeFile: resolvedPid }),
+    { askFn, nonInteractive: !!describeFile },
+  )
 }
 
 // Resolve o resultado de detectStack() em um profile: alta confiança auto-aplica,
 // média confirma, baixa/none cai para lista + modo guiado. Compartilhado por A e B.
-async function resolveDetectedProfile({ candidates, best }, { askFn = ask } = {}) {
+// `nonInteractive` (caminho vindo de flag, ex.: --describe): nunca abre prompt —
+// aplica a stack provável e, sem sinal suficiente, falha explícito (em vez de perguntar).
+async function resolveDetectedProfile({ candidates, best }, { askFn = ask, nonInteractive = false } = {}) {
   if (best.confidenceLabel === 'high') {
     const evidence = best.evidence.filter(Boolean).slice(0, 2).join(', ')
     console.log(`  ${c('green', '✓')} Stack detected: ${c('cyan', best.name)} (confidence: high)`)
@@ -401,12 +406,26 @@ async function resolveDetectedProfile({ candidates, best }, { askFn = ask } = {}
     console.log(`  ${c('yellow', '?')} Probable stack: ${c('cyan', best.name)} (confidence: medium)`)
     if (evidence) console.log(`  ${c('dim', `Evidence: ${evidence}`)}`)
     console.log('')
+    if (nonInteractive) {
+      // caminho não-interativo (flag): há sinal → aplica a stack provável sem perguntar
+      console.log(`  ${c('blue', 'ℹ')} Aplicando a stack provável: ${c('cyan', best.name)}`)
+      console.log('')
+      return resolveProfile(best.name)
+    }
     const answer = await askFn(`  Apply ${bold(best.name)} profile? (Y/n): `)
     if (!answer || answer === 'y' || answer === 'yes') {
       return resolveProfile(best.name)
     }
     console.log('')
     // fall through to manual selection
+  }
+
+  // Sem confiança suficiente. No modo não-interativo (flag) não há como perguntar:
+  // falha explícito orientando o uso de --stack, em vez de abrir um prompt.
+  if (nonInteractive) {
+    console.error(c('red', `  ✗ Não consegui inferir a stack com confiança a partir do PID.`))
+    console.error(c('dim', `  Refine o documento ou informe explicitamente com --stack=<profile>.`))
+    process.exit(1)
   }
 
   const profiles = listProfiles()
@@ -417,6 +436,9 @@ async function resolveDetectedProfile({ candidates, best }, { askFn = ask } = {}
       console.log(`    ${c('dim', `${i + 1}.`)} ${c('cyan', cand.name)}`)
     })
     console.log('')
+  } else if (best.confidenceLabel === 'medium') {
+    // confiança média recusada pelo usuário — não é "não detectou"
+    console.log(`  ${c('blue', 'ℹ')} Ok — escolha manualmente abaixo.`)
   } else {
     console.log(`  ${c('yellow', '?')} Could not auto-detect stack.`)
   }

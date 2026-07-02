@@ -17,8 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   extraída para `resolveDetectedProfile()`, reutilizada pelos dois caminhos. As
   flags `--stack` e `--describe` continuam fazendo bypass do menu (retrocompatível).
   Ver ADR `docs/adr/004-init-two-path-selection.md`.
-  ⚠️ **Breaking menor:** `--describe` apontando para um `.md` inexistente/ inválido
-  agora falha com `exit 1` (antes era silenciosamente ignorado, caindo na detecção).
+  ⚠️ **Breaking menor:** `--describe` agora é estritamente não-interativo — falha
+  com `exit 1` se o `.md` for inexistente/inválido **ou** se não houver sinal
+  suficiente para inferir a stack com confiança (antes caía silenciosamente na
+  detecção/prompt). Use `--stack=<profile>` para forçar. A detecção via docs `.md`
+  também passou a limitar a leitura a 256 KB (defense-in-depth).
 - **Comando `/readiness`** — gera um scorecard de prontidão técnica e o publica
   numa Issue de Prontidão fixa (label estável `maestro:readiness`), no formato
   `maestro.readiness/v1`, consumido pela plataforma Maestro. Aditivo e
