@@ -24,25 +24,31 @@ octechpus init
 ## Quick start
 
 ```bash
-# Auto-detect (recomendado)
 npx octechpus init
-
-# Stack explícita
-npx octechpus init --stack=python-fastapi
 ```
 
-Na detecção automática, o CLI inspeciona manifests (`package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, `pom.xml`/`build.gradle`, `*.csproj`/`*.sln`, `Gemfile`, `composer.json`) **e também documentos `.md` que descrevem o projeto** (`README.md`, `PROJECT.md`, `ARCHITECTURE.md`, etc.):
-- **Alta confiança** → aplica o profile imediatamente
-- **Confiança média** → pede confirmação antes de aplicar
-- **Baixa confiança** → lista candidatos (com "quando usar") e abre menu de seleção
-- **Sem confiança / stack mista** → use o profile `generic`
+Sem flags, o `init` pergunta **como você quer instalar**, com dois caminhos:
 
-Útil para projetos **greenfield** descritos num documento antes de existir código:
+- **A) Projeto em andamento** — o CLI lê a base de código existente e auto-detecta
+  a stack coerente, instalando de forma harmoniosa com o que já está lá.
+- **B) Projeto novo** — você aponta um documento **PID** (`.md`) descrevendo o
+  projeto; o CLI lê o documento e escolhe a stack ideal para começar.
+
+Você pode **pular o menu** com flags:
 
 ```bash
-# Detecta a stack a partir de um doc específico
-npx octechpus init --describe=docs/spec.md
+# Stack explícita (bypass total)
+npx octechpus init --stack=python-fastapi
+
+# Projeto novo: aponta o PID direto (entra no caminho B, não-interativo)
+npx octechpus init --describe=docs/pid.md
 ```
+
+Na detecção (caminhos A e B), o CLI inspeciona manifests (`package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, `pom.xml`/`build.gradle`, `*.csproj`/`*.sln`, `Gemfile`, `composer.json`) **e também documentos `.md`** (o PID no caminho B; `README.md`, `PROJECT.md`, `ARCHITECTURE.md`, etc. no caminho A):
+- **Alta confiança** → aplica o profile imediatamente
+- **Confiança média** → pede confirmação antes de aplicar
+- **Baixa confiança** → lista candidatos (com "quando usar") e abre o modo guiado
+- **Sem confiança / stack mista** → use o profile `generic`
 
 ---
 
@@ -242,6 +248,7 @@ Abra o Claude Code no projeto e use:
 | `/reporter [escopo]` | Relatório consolidado do pipeline |
 | `/design [demanda]` | Briefing de UX/UI (Designer) |
 | `/cost [escopo]` | Audit de gasto de API e dependências |
+| `/readiness [escopo]` | Scorecard de prontidão técnica publicado numa Issue (integração Maestro) |
 
 ---
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { existsSync, readFileSync, writeFileSync, readdirSync } from 'fs'
-import { join, resolve, dirname } from 'path'
+import { join, resolve, dirname, isAbsolute } from 'path'
 import { fileURLToPath } from 'url'
 import { execSync } from 'child_process'
 import { createHash } from 'crypto'
@@ -19,7 +19,7 @@ const __dirname = dirname(__filename)
 // CONFIG
 // ═══════════════════════════════════════════════════════════
 
-const VERSION = '2.9.0'
+const VERSION = '2.10.0'
 const TEMPLATES_DIR = join(__dirname, 'templates')
 const DESIGN_SYSTEM_TEMPLATES_DIR = join(TEMPLATES_DIR, 'design-system')
 const MANIFEST_PATH = '.octechpus/manifest.json'
@@ -32,6 +32,7 @@ const RENDERED_TEMPLATES = new Set([
   'commands/security.md', 'commands/privacy.md', 'commands/reporter.md',
   'commands/docs.md', 'commands/github-issue.md', 'commands/profiler.md',
   'commands/design.md', 'commands/cost-engineer.md', 'commands/audit.md',
+  'commands/readiness.md',
 ])
 
 // Tool presets for scoped subagents (least privilege).
@@ -285,7 +286,7 @@ function getCurrentProfile(projectDir) {
 }
 
 function getActiveCommands() {
-  return ['pipeline', 'maestro', 'audit', 'architect', 'coder', 'review', 'qa', 'security', 'privacy', 'reporter', 'docs', 'github-issue', 'profiler', 'design', 'cost-engineer']
+  return ['pipeline', 'maestro', 'audit', 'architect', 'coder', 'review', 'qa', 'security', 'privacy', 'reporter', 'docs', 'github-issue', 'profiler', 'design', 'cost-engineer', 'readiness']
 }
 
 function getDesignSystemExcludes(profile) {
@@ -322,8 +323,71 @@ async function selectProfile(projectDir, stackFlag, { askFn = ask, describeFile 
     }
   }
 
-  const { candidates, best } = detectStack(projectDir, { describeFile })
+  // Caminho B não-interativo: se --describe foi passado, entra direto no fluxo
+  // "projeto novo via PID" (lê o documento e recomenda a stack ideal).
+  if (describeFile) {
+    return selectForNewProject(projectDir, describeFile, { askFn })
+  }
 
+  // Menu de entrada com DUAS alternativas (substitui a lista longa de profiles):
+  //   A) Projeto em andamento → detecta a stack pela base de código existente.
+  //   B) Projeto novo         → aponta um PID (.md) e o CLI escolhe a stack ideal.
+  console.log(`  ${bold('Como você quer instalar o Octechpus?')}`)
+  console.log(`    ${c('cyan', 'A')}. ${bold('Projeto em andamento')} ${c('dim', '— leio o código existente e instalo a stack coerente')}`)
+  console.log(`    ${c('cyan', 'B')}. ${bold('Projeto novo')} ${c('dim', '— aponte um documento PID (.md) e eu escolho a stack ideal')}`)
+  console.log('')
+  const entry = (await askFn(`  Escolha (A/B, Enter = A): `)).trim().toLowerCase()
+
+  if (entry === 'b' || entry === '2' || entry === 'novo') {
+    return selectForNewProject(projectDir, null, { askFn })
+  }
+  return selectForExistingProject(projectDir, { askFn })
+}
+
+// Caminho A — projeto em andamento: detecta a stack a partir da base de código
+// e instala de forma coerente com o que já existe.
+async function selectForExistingProject(projectDir, { askFn = ask } = {}) {
+  return resolveDetectedProfile(detectStack(projectDir), { askFn })
+}
+
+// Caminho B — projeto novo: lê um documento PID (.md) e recomenda a stack ideal.
+// `describeFile` pode vir da flag --describe (não-interativo) ou ser pedido ao
+// usuário. PID inválido via flag → erro explícito; via prompt → cai no modo guiado.
+async function selectForNewProject(projectDir, describeFile, { askFn = ask } = {}) {
+  let pid = describeFile
+  if (!pid) {
+    pid = (await askFn(`  Caminho do documento PID (.md): `)).trim()
+  }
+
+  const resolvedPid = pid ? (isAbsolute(pid) ? pid : join(projectDir, pid)) : null
+  const validPid = pid && pid.toLowerCase().endsWith('.md') && resolvedPid && existsSync(resolvedPid)
+
+  if (!validPid) {
+    if (describeFile) {
+      // veio de --describe → falha previsível para uso em scripts
+      console.error(c('red', `  ✗ Documento PID inválido ou não encontrado: "${pid}"`))
+      console.error(c('dim', `  Aponte um arquivo .md existente via --describe=<arquivo.md>.`))
+      process.exit(1)
+    }
+    console.log(`  ${c('yellow', '?')} PID não encontrado — vou te guiar por perguntas.`)
+    console.log('')
+    const profiles = listProfiles()
+    const guided = await runGuidedSelection(profiles, askFn)
+    if (guided) {
+      try {
+        return resolveProfile(guided)
+      } catch { /* nome inválido → cai no prompt abaixo */ }
+    }
+    const retry = await askFn(`  Select profile (name or 1-${profiles.length}): `)
+    return resolveSelectedProfile(retry, profiles)
+  }
+
+  return resolveDetectedProfile(detectStack(projectDir, { describeFile: resolvedPid }), { askFn })
+}
+
+// Resolve o resultado de detectStack() em um profile: alta confiança auto-aplica,
+// média confirma, baixa/none cai para lista + modo guiado. Compartilhado por A e B.
+async function resolveDetectedProfile({ candidates, best }, { askFn = ask } = {}) {
   if (best.confidenceLabel === 'high') {
     const evidence = best.evidence.filter(Boolean).slice(0, 2).join(', ')
     console.log(`  ${c('green', '✓')} Stack detected: ${c('cyan', best.name)} (confidence: high)`)
@@ -767,6 +831,7 @@ function commandStatus(targetDir) {
     { path: '.claude/commands/security.md', label: 'Security command', critical: false },
     { path: '.claude/commands/docs.md', label: 'Docs command', critical: false },
     { path: '.claude/commands/github-issue.md', label: 'GitHub Issue command', critical: false },
+    { path: '.claude/commands/readiness.md', label: 'Readiness command (optional)', critical: false },
     { path: '.claude/commands/design.md', label: 'Design command (optional)', critical: false },
     { path: 'design-system', label: 'Design system files (optional)', critical: false },
     { path: 'CLAUDE.md', label: 'CLAUDE.md config', critical: true },
